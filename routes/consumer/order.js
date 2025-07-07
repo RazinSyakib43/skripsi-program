@@ -6,6 +6,8 @@ const db = require('../../config/db');
 router.get("/all", async (req, res) => {
     let client;
     try {
+        client = await db.connect();
+
         const consumerID = req.user.id;
         const query = `
             SELECT
@@ -30,7 +32,7 @@ router.get("/all", async (req, res) => {
             WHERE dor.id_consumer = $1
             GROUP BY o.id, o.date, o.status;`;
 
-        const result = await db.query(query, [consumerID]);
+        const result = await client.query(query, [consumerID]);
         if (result.rows.length === 0) {
             return res.status(404).json({
                 message: "No orders found",
@@ -42,7 +44,7 @@ router.get("/all", async (req, res) => {
             data: result.rows,
         });
     } catch (err) {
-        console.error("Error fetching orders:", err);
+        // console.error("Error fetching orders:", err);
         return res.status(500).json({
             message: "Internal Server Error",
             error: err.message,
@@ -57,15 +59,18 @@ router.get("/all", async (req, res) => {
 router.post('/create', async (req, res) => {
     let client;
     try {
+        client = await db.connect();
+
+        const consumerID = req.user.id;
         const { date, notes, status, kurir, alamat, invoice_url, latitude, longitude } = req.body;
 
         const query = `
-        INSERT INTO ordering (date, notes, status, kurir, alamat, invoice_url, latitude, longitude)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        INSERT INTO ordering (id, id_consumer, date, notes, status, kurir, alamat, invoice_url, latitude, longitude)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
             RETURNING id AS id_ordering`;
 
-        const result = await db.query(query, [
-            date, notes, status, kurir, alamat, invoice_url, latitude, longitude
+        const result = await client.query(query, [
+            consumerID, consumerID, date, notes, status, kurir, alamat, invoice_url, latitude, longitude
         ]);
 
         return res.status(201).json({
@@ -73,7 +78,7 @@ router.post('/create', async (req, res) => {
             message: "Order created successfully",
         });
     } catch (err) {
-        console.error("Error creating order:", err);
+        // console.error("Error creating order:", err);
         return res.status(500).json({
             message: "Internal Server Error",
             error: err.message,
@@ -88,51 +93,72 @@ router.post('/create', async (req, res) => {
 router.post('/create/detail', async (req, res) => {
     let client;
     try {
+        client = await db.connect();
+
         const consumerID = req.user.id;
         const orderingID = req.body.idOrdering;
+
+        const queryCheckOrdering = `
+            SELECT id FROM ordering
+            WHERE id = $1 AND status = 'PENDING'`;
+        const resultCheckOrdering = await client.query(queryCheckOrdering, [orderingID]);
 
         const queryGetCart = `
             SELECT * FROM cart 
             WHERE id_consumer = $1`;
-
-        const resultGetCart = await db.query(queryGetCart, [consumerID]);
+        const resultGetCart = await client.query(queryGetCart, [consumerID]);
         if (resultGetCart.rows.length === 0) {
             return res.status(404).json({
                 message: "Cart is empty",
             });
         }
 
-        const cartItems = resultGetCart.rows;
+        if (resultCheckOrdering.rowCount === 0) {
+            return res.status(404).json({
+                message: "No pending order with this ID found",
+            });
+        } else {
+            // mulai transaksi
+            await client.query('BEGIN');
 
-        const queryInsertDetailOrdering = `
-            INSERT INTO detail_ordering (id_consumer, id_ordering, id_fish, weight)
-            VALUES ($1, $2, $3, $4)`;
+            const cartItems = resultGetCart.rows;
 
-        for (const item of cartItems) {
-            await db.query(queryInsertDetailOrdering, [consumerID, orderingID, item.id_fish, item.weight]);
-        }
-        // Menghapus item dari keranjang setelah order dibuat
-        const queryClearCart = `
-            DELETE FROM cart 
-            WHERE id_consumer = $1`;
-        await db.query(queryClearCart, [consumerID]);
+            const queryInsertDetailOrdering = `
+                INSERT INTO detail_ordering (id_consumer, id_ordering, id_fish, weight)
+                VALUES ($1, $2, $3, $4)`;
 
-        // Mengurangi weight dari fish yang dipesan
-        const queryUpdateFishWeight = `
+            for (const item of cartItems) {
+                await client.query(queryInsertDetailOrdering, [consumerID, orderingID, item.id_fish, item.weight]);
+            }
+            // Menghapus item dari keranjang setelah order dibuat
+            const queryClearCart = `DELETE FROM cart WHERE id_consumer = $1`;
+            await client.query(queryClearCart, [consumerID]);
+
+            // Mengurangi weight dari fish yang dipesan
+            const queryUpdateFishWeight = `
             UPDATE weight
                 SET weight = weight - $1
                 FROM fish
                 WHERE weight.id = fish.id_weight AND fish.id = $2`;
 
-        for (const item of cartItems) {
-            await db.query(queryUpdateFishWeight, [item.weight, item.id_fish]);
+            for (const item of cartItems) {
+                await client.query(queryUpdateFishWeight, [item.weight, item.id_fish]);
+            }
+
+            // commit alias menyimpan perubahan ke database
+            await client.query('COMMIT');
+
+            return res.status(201).json({
+                id_ordering: consumerID,
+                message: "Order details created successfully",
+            });
         }
-        return res.status(201).json({
-            id_ordering: orderingID,
-            message: "Order details created successfully",
-        });
     } catch (err) {
-        console.error("Error creating order details:", err);
+        // rollback alias membatalkan transaksi jika ada error
+        if (client) {
+            await client.query('ROLLBACK');
+        }
+        // console.error("Error creating order details:", err);
         return res.status(500).json({
             message: "Internal Server Error",
             error: err.message,

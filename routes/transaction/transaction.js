@@ -5,6 +5,8 @@ const db = require('../../config/db');
 
 router.get("/all", async (req, res) => {
     try {
+        client = await db.connect();
+
         const consumerID = req.user.id;
         const query = `
             SELECT
@@ -29,7 +31,7 @@ router.get("/all", async (req, res) => {
                 WHERE t.id_consumer = $1
                 GROUP BY t.id, t.status, t.dates_transaction, t.dates_payed, o.id`;
 
-        const result = await db.query(query, [consumerID]);
+        const result = await client.query(query, [consumerID]);
         if (result.rows.length === 0) {
             return res.status(404).json({
                 message: "No transactions found",
@@ -41,7 +43,7 @@ router.get("/all", async (req, res) => {
             data: result.rows,
         });
     } catch (err) {
-        console.error("Error fetching transactions:", err);
+        // console.error("Error fetching transactions:", err);
         return res.status(500).json({
             message: "Internal Server Error",
             error: err.message,
@@ -75,7 +77,7 @@ router.post("/create", async (req, res) => {
             transaction_id: result.rows[0].transaction_id,
         });
     } catch (err) {
-        console.error("Error creating transaction:", err);
+        // console.error("Error creating transaction:", err);
         return res.status(500).json({
             message: "Internal Server Error",
             error: err.message,
@@ -107,7 +109,7 @@ router.put("/update/:id", async (req, res) => {
             message: "Transaction updated successfully",
         });
     } catch (err) {
-        console.error("Error updating transaction:", err);
+        // console.error("Error updating transaction:", err);
         return res.status(500).json({
             message: "Internal Server Error",
             error: err.message,

@@ -18,16 +18,19 @@ async function authorize(req, res, next) {
             });
         }
 
-        console.log("bearerToken", bearerToken);
+        // console.log("bearerToken", bearerToken);
 
         const tokenPayload = jwt.verify(bearerToken, SECRET_KEY);
+        // console.log("tokenPayload", tokenPayload);
 
         client = await db.connect();
         try {
-            const queryText = 'SELECT id, email, name FROM consumer WHERE id = $1';
-            console.log("queryText", queryText);
+            const tableRole = [tokenPayload.role];
+            // console.log("tableRole", tableRole);
+            const queryText = `SELECT id FROM ${tableRole} WHERE id = $1`;
+            // console.log("queryText", queryText);
             const { rows } = await client.query(queryText, [tokenPayload.id]);
-            console.log("rows", rows);
+            // console.log("rows", rows);
             if (rows.length === 0) {
                 return res.status(401).send({
                     code: 401,
@@ -36,12 +39,10 @@ async function authorize(req, res, next) {
                 });
             }
             req.user = {
-                id: rows[0].id,
-                email: rows[0].email,
-                name: rows[0].name
+                id: rows[0].id
             };
         } catch (err) {
-            console.error("Database query error:", err);
+            // console.error("Database query error:", err);
             return res.status(500).send({
                 code: 500,
                 status: "Internal Server Error",
@@ -60,14 +61,16 @@ async function authorize(req, res, next) {
         next();
 
     } catch (err) {
-        console.error("Authorization error:", err);
+        // console.error("Authorization error:", err);
         res.status(401).send({
             code: 401,
             status: "Unauthorized",
             message: "Please login first or register if you don't have an account"
         });
     } finally {
-        if (client) client.release();
+        if (client) {
+            client.release();
+        }
     }
 }
 

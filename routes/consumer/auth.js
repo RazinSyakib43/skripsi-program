@@ -4,12 +4,14 @@ const router = express.Router();
 const db = require('../../config/db');
 
 const { generateToken } = require("../../utils/token");
-const { encryptPassword, checkPassword } = require("../../utils/encrypt");
+const { checkPassword } = require("../../utils/encrypt");
 
 // login
 router.post("/login", async (req, res) => {
     let client;
     try {
+        client = await db.connect();
+
         const { email, password } = req.body;
 
         if (!email || !password) {
@@ -18,12 +20,12 @@ router.post("/login", async (req, res) => {
             });
         }
 
-        const query = await db.query(
+        const query = await client.query(
             `SELECT * FROM consumer WHERE email = $1`,
             [email]
         );
         const selectedUser = query.rows[0];
-        console.log(selectedUser);
+        // console.log(selectedUser);
         if (!selectedUser) {
             return res.status(404).json({
                 message: "User not found",
@@ -37,14 +39,14 @@ router.post("/login", async (req, res) => {
             });
         }
 
-        const token = await generateToken(selectedUser.id);
+        const token = await generateToken(selectedUser.id, selectedUser.role);
         res.status(200).json({
             message: "Login successful",
             token: token,
         });
 
     } catch (err) {
-        console.error(err);
+        // console.error(err);
         return res.status(500).json({
             message: "Internal Server Error",
             error: err.message,

@@ -4,7 +4,10 @@ const router = express.Router();
 const db = require('../../config/db');
 
 router.get("/all", async (req, res) => {
+    let client;
     try {
+        client = await db.connect();
+
         const consumerID = req.user.id;
         const query = `
             SELECT
@@ -32,7 +35,7 @@ router.get("/all", async (req, res) => {
             WHERE f.id_seller = $1 AND t.status = 'PAID'
             GROUP BY o.id, o.date, c.name, c.address, o.status, t.status`;
 
-        const result = await db.query(query, [consumerID]);
+        const result = await client.query(query, [consumerID]);
         if (result.rows.length === 0) {
             return res.status(404).json({
                 message: "No orders found",
@@ -44,7 +47,7 @@ router.get("/all", async (req, res) => {
             data: result.rows,
         });
     } catch (err) {
-        console.error("Error fetching orders:", err);
+        // console.error("Error fetching orders:", err);
         return res.status(500).json({
             message: "Internal Server Error",
             error: err.message,

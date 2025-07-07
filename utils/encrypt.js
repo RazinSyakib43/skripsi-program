@@ -13,8 +13,8 @@ async function encryptPassword(password) {
 
 async function checkPassword(encryptedPassword, password) {
     try {
-        console.log("Encrypted password:", encryptedPassword);
-        console.log("Plain password:", password);
+        // console.log("Encrypted password:", encryptedPassword);
+        // console.log("Plain password:", password);
 
         const isMatch = await bcrypt.compare(password, encryptedPassword);
         return isMatch;
