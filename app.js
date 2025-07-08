@@ -16,7 +16,7 @@ const orderSellerRouter = require("./routes/seller/order");
 // transaction
 const transactionRouter = require("./routes/transaction/transaction");
 
-const port = 3000;
+const port = 80;
 
 const app = express();
 
@@ -38,7 +38,7 @@ app.use("/transaction", authorization, transactionRouter);
 // seller routes
 app.use("/seller/order", authorization, orderSellerRouter);
 
-server.listen(port, () => {
+app.listen(port, () => {
   // console.log(`Server is running on port ${port}`);
 });
 
