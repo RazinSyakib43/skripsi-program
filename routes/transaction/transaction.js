@@ -57,6 +57,8 @@ router.get("/all", async (req, res) => {
 
 router.post("/create", async (req, res) => {
     try {
+        client = await db.connect();
+
         const consumerID = req.user.id;
         const { id_external, idOrdering, created, paid_at, status } = req.body;
 
@@ -66,7 +68,7 @@ router.post("/create", async (req, res) => {
         RETURNING id AS transaction_id`;
 
         const values = [id_external, consumerID, created, paid_at, idOrdering, status];
-        const result = await db.query(query, values);
+        const result = await client.query(query, values);
         if (result.rows.length === 0) {
             return res.status(400).json({
                 message: "Failed to create transaction",
@@ -91,15 +93,15 @@ router.post("/create", async (req, res) => {
 
 router.put("/update/:id", async (req, res) => {
     try {
-        const transactionID = req.params.id;
+        client = await db.connect();
 
+        const transactionID = req.params.id;
         const { status } = req.body;
 
         const query = `
             UPDATE transaction SET status = $1 WHERE id = $2`;
 
-        await db.query(query, [status, transactionID]);
-        const result = await db.query(query, [status, transactionID]);
+        const result = await client.query(query, [status, transactionID]);
         if (result.rowCount === 0) {
             return res.status(404).json({
                 message: "Transaction not found",
