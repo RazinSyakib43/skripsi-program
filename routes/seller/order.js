@@ -8,7 +8,7 @@ router.get("/all", async (req, res) => {
     try {
         client = await db.connect();
 
-        const consumerID = req.user.id;
+        const sellerID = req.user.id;
         const query = `
             SELECT
                 o.id AS id_ordering,
@@ -35,7 +35,7 @@ router.get("/all", async (req, res) => {
             WHERE f.id_seller = $1 AND t.status = 'PAID'
             GROUP BY o.id, o.date, c.name, c.address, o.status, t.status`;
 
-        const result = await client.query(query, [consumerID]);
+        const result = await client.query(query, [sellerID]);
         if (result.rows.length === 0) {
             return res.status(404).json({
                 message: "No orders found",
