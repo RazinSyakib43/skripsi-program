@@ -2,13 +2,23 @@ const express = require("express");
 const router = express.Router();
 
 const db = require('../../config/db');
+const redis = require('../../config/redis');
 
 router.get("/all", async (req, res) => {
     try {
-        client = await db.connect();
-
         const consumerID = req.user.id;
-        const query = `
+        // Cek di Redis apakah ada cache untuk transaksi
+        const transactionsCache = await redis.GET(`transactions:all:${consumerID}`);
+
+        if (transactionsCache) {
+            return res.status(200).json({
+                length: JSON.parse(transactionsCache).length,
+                message: "Success - All transactions (Redis Cache)",
+                data: JSON.parse(transactionsCache),
+            });
+        } else {
+            client = await db.connect();
+            const query = `
             SELECT
                 t.id AS id_transaction,
                 t.status AS transaction_status,
@@ -31,17 +41,22 @@ router.get("/all", async (req, res) => {
                 WHERE t.id_consumer = $1
                 GROUP BY t.id, t.status, t.dates_transaction, t.dates_payed, o.id`;
 
-        const result = await client.query(query, [consumerID]);
-        if (result.rows.length === 0) {
-            return res.status(404).json({
-                message: "No transactions found",
+            const result = await client.query(query, [consumerID]);
+            if (result.rows.length === 0) {
+                return res.status(404).json({
+                    message: "No transactions found",
+                });
+            }
+
+            // Simpan hasil query ke Redis dengan tipe data string
+            await redis.set(`transactions:all:${consumerID}`, JSON.stringify(result.rows));
+
+            return res.status(200).json({
+                length: result.rows.length,
+                message: "Success - All transactions (PostgreSQL)",
+                data: result.rows,
             });
         }
-        return res.status(200).json({
-            length: result.rows.length,
-            message: "Success - All transactions (PostgreSQL)",
-            data: result.rows,
-        });
     } catch (err) {
         // console.error("Error fetching transactions:", err);
         return res.status(500).json({
@@ -74,6 +89,10 @@ router.post("/create", async (req, res) => {
                 message: "Failed to create transaction",
             });
         }
+
+        // Hapus cache Redis untuk semua transaksi milik consumer id tersebut
+        await redis.del(`transactions:all:${consumerID}`);
+
         return res.status(201).json({
             message: "Transaction created successfully",
             transaction_id: result.rows[0].transaction_id,
@@ -107,6 +126,10 @@ router.put("/update/:id", async (req, res) => {
                 message: "Transaction not found",
             });
         }
+
+        // Hapus cache Redis untuk semua transaksi milik consumer id tersebut
+        await redis.del(`transactions:all:${consumerID}`);
+
         return res.status(200).json({
             message: "Transaction updated successfully",
         });

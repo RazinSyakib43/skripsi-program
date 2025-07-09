@@ -2,14 +2,25 @@ const express = require("express");
 const router = express.Router();
 
 const db = require('../../config/db');
+const redis = require('../../config/redis');
 
 router.get("/all", async (req, res) => {
     let client;
     try {
-        client = await db.connect();
-
         const sellerID = req.user.id;
-        const query = `
+
+        // // Cek di Redis apakah ada cache untuk pesanan masuk dari consumer
+        const ordersAllCache = await redis.GET(`orders:all:${sellerID}`);
+
+        if (ordersAllCache) {
+            return res.status(200).json({
+                length: JSON.parse(ordersAllCache).length,
+                message: "Success - All orders (Redis Cache)",
+                data: JSON.parse(ordersAllCache),
+            });
+        } else {
+            client = await db.connect();
+            const query = `
             SELECT
                 o.id AS id_ordering,
                 o.date,
@@ -35,17 +46,22 @@ router.get("/all", async (req, res) => {
             WHERE f.id_seller = $1 AND t.status = 'PAID'
             GROUP BY o.id, o.date, c.name, c.address, o.status, t.status`;
 
-        const result = await client.query(query, [sellerID]);
-        if (result.rows.length === 0) {
-            return res.status(404).json({
-                message: "No orders found",
+            const result = await client.query(query, [sellerID]);
+            if (result.rows.length === 0) {
+                return res.status(404).json({
+                    message: "No orders found",
+                });
+            }
+
+            // Simpan hasil query ke Redis
+            await redis.set(`orders:all:${sellerID}`, JSON.stringify(result.rows));
+
+            return res.status(200).json({
+                length: result.rows.length,
+                message: "Success - All orders (PostgreSQL)",
+                data: result.rows,
             });
         }
-        return res.status(200).json({
-            length: result.rows.length,
-            message: "Success - All orders (PostgreSQL)",
-            data: result.rows,
-        });
     } catch (err) {
         // console.error("Error fetching orders:", err);
         return res.status(500).json({

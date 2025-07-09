@@ -2,14 +2,25 @@ const express = require("express");
 const router = express.Router();
 
 const db = require('../../config/db');
+const redis = require('../../config/redis');
 
-router.get("/", async (req, res) =>  {
+router.get("/", async (req, res) => {
     let client;
     try {
-        client = await db.connect();
-
         const consumerID = req.user.id;
-        const query = `
+
+        const cartAllCache = await redis.get(`cart:all:${consumerID}`);
+        if (cartAllCache) {
+            return res.status(200).json({
+                length: JSON.parse(cartAllCache).length,
+                message: "Success - All cart items (Redis Cache)",
+                data: JSON.parse(cartAllCache),
+            });
+        } else {
+            // baru konek ke postgres jika cache miss
+            client = await db.connect();
+
+            const query = `
             SELECT 
                 c.id AS id_cart, 
                 c.notes, 
@@ -25,17 +36,21 @@ router.get("/", async (req, res) =>  {
             JOIN seller s ON f.id_seller = s.id
             WHERE c.id_consumer = $1
         `;
-        const result = await client.query(query, [consumerID]);
-        if (result.rows.length === 0) {
-            return res.status(404).json({
-                message: "Cart is empty",
+            const result = await client.query(query, [consumerID]);
+            if (result.rows.length === 0) {
+                return res.status(404).json({
+                    message: "Cart is empty",
+                });
+            }
+
+            await redis.set(`cart:all:${consumerID}`, JSON.stringify(result.rows));
+
+            return res.status(200).json({
+                length: result.rows.length,
+                message: "Success - All cart items (PostgreSQL)",
+                data: result.rows,
             });
         }
-        return res.status(200).json({
-            length: result.rows.length,
-            message: "Success - All cart items (PostgreSQL)",
-            data: result.rows,
-        });
     } catch (err) {
         // console.error("Error fetching cart:", err);
         return res.status(500).json({
@@ -52,10 +67,10 @@ router.get("/", async (req, res) =>  {
 router.post("/add", async (req, res) => {
     let client;
     try {
-        client = await db.connect();
-
         const { id_fish, notes, weight } = req.body;
         const consumerID = req.user.id;
+
+        client = await db.connect();
 
         // Check jika item sudah ada di keranjangs
         // pakai 1 karena gak butuh datanya, cuma cek datanya ada atau gk
@@ -73,6 +88,10 @@ router.post("/add", async (req, res) => {
                 WHERE id_fish = $3 AND id_consumer = $4
             `;
             await client.query(updateQuery, [notes, weight, id_fish, consumerID]);
+
+            // Hapus cache Redis untuk keranjang semua item
+            await redis.del(`cart:all:${consumerID}`);
+
             return res.status(200).json({
                 message: "Cart updated successfully",
             });

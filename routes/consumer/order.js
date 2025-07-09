@@ -2,14 +2,25 @@ const express = require("express");
 const router = express.Router();
 
 const db = require('../../config/db');
+const redis = require('../../config/redis');
 
 router.get("/all", async (req, res) => {
     let client;
     try {
-        client = await db.connect();
-
         const consumerID = req.user.id;
-        const query = `
+
+        // Cek di Redis apakah ada cache untuk pesanan
+        const ordersAllCache = await redis.get(`orders:all:${consumerID}`);
+
+        if (ordersAllCache) {
+            return res.status(200).json({
+                length: JSON.parse(ordersAllCache).length,
+                message: "Success - All orders (Redis Cache)",
+                data: JSON.parse(ordersAllCache),
+            });
+        } else {
+            client = await db.connect();
+            const query = `
             SELECT
                 o.id AS id_ordering,
                 o.date,
@@ -32,17 +43,22 @@ router.get("/all", async (req, res) => {
             WHERE dor.id_consumer = $1
             GROUP BY o.id, o.date, o.status;`;
 
-        const result = await client.query(query, [consumerID]);
-        if (result.rows.length === 0) {
-            return res.status(404).json({
-                message: "No orders found",
+            const result = await client.query(query, [consumerID]);
+            if (result.rows.length === 0) {
+                return res.status(404).json({
+                    message: "No orders found",
+                });
+            }
+
+            // Simpan hasil query ke Redis dengan tipe data string
+            await redis.set(`orders:all:${consumerID}`, JSON.stringify(result.rows));
+
+            return res.status(200).json({
+                length: result.rows.length,
+                message: "Success - All orders (PostgreSQL)",
+                data: result.rows,
             });
         }
-        return res.status(200).json({
-            length: result.rows.length,
-            message: "Success - All orders (PostgreSQL)",
-            data: result.rows,
-        });
     } catch (err) {
         // console.error("Error fetching orders:", err);
         return res.status(500).json({
@@ -92,11 +108,11 @@ router.post('/create', async (req, res) => {
 
 router.post('/create/detail', async (req, res) => {
     let client;
-    try {
-        client = await db.connect();
-
+    try {        
         const consumerID = req.user.id;
         const orderingID = req.body.idOrdering;
+
+        client = await db.connect();
 
         const queryCheckOrdering = `
             SELECT id FROM ordering
@@ -147,6 +163,12 @@ router.post('/create/detail', async (req, res) => {
 
             // commit alias menyimpan perubahan ke database
             await client.query('COMMIT');
+
+            // Hapus cache Redis untuk semua order
+            await redis.del(`orders:all:${consumerID}`);
+
+            // Hapus cache Redis untuk keranjang
+            await redis.del(`cart:all:${consumerID}`);
 
             return res.status(201).json({
                 id_ordering: consumerID,
