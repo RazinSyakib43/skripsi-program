@@ -81,12 +81,12 @@ router.post('/create', async (req, res) => {
         const { date, notes, status, kurir, alamat, invoice_url, latitude, longitude } = req.body;
 
         const query = `
-        INSERT INTO ordering (id, id_consumer, date, notes, status, kurir, alamat, invoice_url, latitude, longitude)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        INSERT INTO ordering (id_consumer, date, notes, status, kurir, alamat, invoice_url, latitude, longitude)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             RETURNING id AS id_ordering`;
 
         const result = await client.query(query, [
-            consumerID, consumerID, date, notes, status, kurir, alamat, invoice_url, latitude, longitude
+            consumerID, date, notes, status, kurir, alamat, invoice_url, latitude, longitude
         ]);
 
         return res.status(201).json({
