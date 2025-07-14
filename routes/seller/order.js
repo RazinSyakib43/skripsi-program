@@ -4,13 +4,14 @@ const router = express.Router();
 const db = require('../../config/db');
 const redis = require('../../config/redis');
 
+// get all orders (cache-aside)
 router.get("/all", async (req, res) => {
     let client;
     try {
         const sellerID = req.user.id;
 
         // // Cek di Redis apakah ada cache untuk pesanan masuk dari consumer
-        const ordersAllCache = await redis.GET(`orders:all:${sellerID}`);
+        const ordersAllCache = await redis.get(`orders:all:${sellerID}`);
 
         if (ordersAllCache) {
             return res.status(200).json({
@@ -72,6 +73,36 @@ router.get("/all", async (req, res) => {
         if (client) {
             client.release();
         }
+    }
+});
+
+// get all orders (cache hit)
+router.get("/all-cachehit", async (req, res) => {
+    try {
+        const sellerID = req.user.id;
+
+        // // Cek di Redis apakah ada cache untuk pesanan masuk dari consumer
+        const ordersAllCache = await redis.get(`orders:all:${sellerID}`);
+
+        if (ordersAllCache) {
+            return res.status(404).json({
+                message: "No orders (seller) cache found",
+            });
+        }
+
+        const JSONparse = JSON.parse(ordersAllCache);
+
+        return res.status(200).json({
+            length: JSONparse.length,
+            message: "Success - All orders (Redis Cache)",
+            data: JSONparse,
+        });
+    } catch (err) {
+        // console.error("Error fetching orders:", err);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            error: err.message,
+        });
     }
 });
 

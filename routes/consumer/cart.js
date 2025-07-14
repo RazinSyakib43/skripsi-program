@@ -10,11 +10,13 @@ router.get("/", async (req, res) => {
         const consumerID = req.user.id;
 
         const cartAllCache = await redis.get(`cart:all:${consumerID}`);
+
         if (cartAllCache) {
+            const JSONparse = JSON.parse(cartAllCache);
             return res.status(200).json({
-                length: JSON.parse(cartAllCache).length,
+                length: JSONparse.length,
                 message: "Success - All cart items (Redis Cache)",
-                data: JSON.parse(cartAllCache),
+                data: JSONparse,
             });
         } else {
             // baru konek ke postgres jika cache miss
@@ -61,6 +63,33 @@ router.get("/", async (req, res) => {
         if (client) {
             client.release();
         }
+    }
+});
+
+router.get("/cachehit", async (req, res) => {
+    try {
+        const consumerID = req.user.id;
+
+        const cartAllCache = await redis.get(`cart:all:${consumerID}`);
+
+        if (!cartAllCache) {
+            return res.status(404).json({
+                message: "No cart data cache found",
+            });
+        }
+
+        const JSONparse = JSON.parse(cartAllCache);
+        return res.status(200).json({
+            length: JSONparse.length,
+            message: "Success - All cart items (Redis Cache)",
+            data: JSONparse,
+        });
+    } catch (err) {
+        // console.error("Error fetching cart:", err);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            error: err.message,
+        });
     }
 });
 

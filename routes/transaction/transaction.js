@@ -4,11 +4,12 @@ const router = express.Router();
 const db = require('../../config/db');
 const redis = require('../../config/redis');
 
+// get all orders (cache-aside)
 router.get("/all", async (req, res) => {
     try {
         const consumerID = req.user.id;
         // Cek di Redis apakah ada cache untuk transaksi
-        const transactionsCache = await redis.GET(`transactions:all:${consumerID}`);
+        const transactionsCache = await redis.get(`transactions:all:${consumerID}`);
 
         if (transactionsCache) {
             return res.status(200).json({
@@ -67,6 +68,34 @@ router.get("/all", async (req, res) => {
         if (client) {
             client.release();
         }
+    }
+});
+
+// get all orders (cache hit)
+router.get("/all-cachehit", async (req, res) => {
+    try {
+        const consumerID = req.user.id;
+        // Cek di Redis apakah ada cache untuk transaksi
+        const transactionsCache = await redis.get(`transactions:all:${consumerID}`);
+
+        if (!transactionsCache) {
+            return res.status(404).json({
+                message: "No transactions data cache found",
+            });
+        }
+
+        const JSONparse = JSON.parse(transactionsCache);
+        return res.status(200).json({
+            length: JSONparse.length,
+            message: "Success - All transactions (Redis Cache)",
+            data: JSONparse,
+        });
+    } catch (err) {
+        // console.error("Error fetching transactions:", err);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            error: err.message,
+        });
     }
 });
 
