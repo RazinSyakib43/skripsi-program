@@ -15,7 +15,6 @@ router.get("/all", async (req, res) => {
 
         if (ordersAllCache) {
             return res.status(200).json({
-                length: JSON.parse(ordersAllCache).length,
                 message: "Success - All orders (Redis Cache)",
                 data: JSON.parse(ordersAllCache),
             });
@@ -58,7 +57,6 @@ router.get("/all", async (req, res) => {
             await redis.set(`orders:all:${sellerID}`, JSON.stringify(result.rows));
 
             return res.status(200).json({
-                length: result.rows.length,
                 message: "Success - All orders (PostgreSQL)",
                 data: result.rows,
             });
@@ -93,7 +91,6 @@ router.get("/all-cachehit", async (req, res) => {
         const JSONparse = JSON.parse(ordersAllCache);
 
         return res.status(200).json({
-            length: JSONparse.length,
             message: "Success - All orders (Redis Cache)",
             data: JSONparse,
         });

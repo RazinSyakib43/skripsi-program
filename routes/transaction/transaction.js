@@ -14,7 +14,6 @@ router.get("/all", async (req, res) => {
 
         if (transactionsCache) {
             return res.status(200).json({
-                length: JSON.parse(transactionsCache).length,
                 message: "Success - All transactions (Redis Cache)",
                 data: JSON.parse(transactionsCache),
             });
@@ -54,7 +53,6 @@ router.get("/all", async (req, res) => {
             await redis.set(`transactions:all:${consumerID}`, JSON.stringify(result.rows));
 
             return res.status(200).json({
-                length: result.rows.length,
                 message: "Success - All transactions (PostgreSQL)",
                 data: result.rows,
             });
@@ -87,7 +85,6 @@ router.get("/all-cachehit", async (req, res) => {
 
         const JSONparse = JSON.parse(transactionsCache);
         return res.status(200).json({
-            length: JSONparse.length,
             message: "Success - All transactions (Redis Cache)",
             data: JSONparse,
         });

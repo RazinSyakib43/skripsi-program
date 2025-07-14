@@ -14,7 +14,6 @@ router.get("/all", async (req, res) => {
         if (fishAllCache) {
             const JSONparse = JSON.parse(fishAllCache);
             return res.status(200).json({
-                length: JSONparse.length,
                 message: "Success - All fish (Redis Cache)",
                 data: JSONparse,
             });
@@ -44,7 +43,6 @@ router.get("/all", async (req, res) => {
             await redis.set('fish:all', JSON.stringify(result.rows));
 
             return res.status(200).json({
-                length: result.rows.length,
                 message: "Success - All fish (PostgreSQL)",
                 data: result.rows,
             });
@@ -76,7 +74,6 @@ router.get("/all-cachehit", async (req, res) => {
 
         const JSONparse = JSON.parse(fishAllCache);
         return res.status(200).json({
-            length: JSONparse.length,
             message: "Success - All fish (Redis Cache)",
             data: JSONparse,
         });
@@ -100,7 +97,6 @@ router.get("/cari/", async (req, res) => {
         if (searchDataRedis) {
             const JSONparse = JSON.parse(searchDataRedis);
             return res.status(200).json({
-                length: JSONparse.length,
                 message: "Success - Search fish (Redis Cache)",
                 data: JSONparse,
             });
@@ -131,7 +127,6 @@ router.get("/cari/", async (req, res) => {
             await redis.set(`fish:search:${fishName}`, JSON.stringify(result.rows));
 
             return res.status(200).json({
-                length: result.rows.length,
                 message: "Success - Search fish (PostgreSQL)",
                 data: result.rows,
             });
@@ -165,7 +160,6 @@ router.get("/cari-cachehit/", async (req, res) => {
 
         const JSONparse = JSON.parse(searchDataRedis);
         return res.status(200).json({
-            length: JSONparse.length,
             message: "Success - Search fish (Redis Cache)",
             data: JSONparse,
         });
@@ -196,7 +190,6 @@ router.get("/detail/:id", async (req, res) => {
             JSONparse.weight = weightDetailDB.rows[0].weight;
 
             return res.status(200).json({
-                length: 1,
                 message: `Success - Detail fish ${fishId} (Redis Cache)`,
                 data: JSONparse,
             });
@@ -230,7 +223,6 @@ router.get("/detail/:id", async (req, res) => {
             await redis.set(`fish:detail:${fishId}`, JSON.stringify(result.rows[0]));
 
             return res.status(200).json({
-                length: result.rows.length,
                 message: `Success - Detail fish ${fishId} (PostgreSQL)`,
                 data: result.rows[0],
             });
@@ -270,7 +262,6 @@ router.get("/detail-cachehit/:id", async (req, res) => {
         JSONparse.weight = weightDetailDB.rows[0].weight;
 
         return res.status(200).json({
-            length: 1,
             message: `Success - Detail fish ${fishId} (Redis Cache)`,
             data: JSONparse,
         });

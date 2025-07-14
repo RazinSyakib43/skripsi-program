@@ -14,7 +14,6 @@ router.get("/", async (req, res) => {
         if (cartAllCache) {
             const JSONparse = JSON.parse(cartAllCache);
             return res.status(200).json({
-                length: JSONparse.length,
                 message: "Success - All cart items (Redis Cache)",
                 data: JSONparse,
             });
@@ -48,7 +47,6 @@ router.get("/", async (req, res) => {
             await redis.set(`cart:all:${consumerID}`, JSON.stringify(result.rows));
 
             return res.status(200).json({
-                length: result.rows.length,
                 message: "Success - All cart items (PostgreSQL)",
                 data: result.rows,
             });
@@ -80,7 +78,6 @@ router.get("/cachehit", async (req, res) => {
 
         const JSONparse = JSON.parse(cartAllCache);
         return res.status(200).json({
-            length: JSONparse.length,
             message: "Success - All cart items (Redis Cache)",
             data: JSONparse,
         });
