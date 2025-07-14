@@ -84,7 +84,7 @@ router.get("/all-cachehit", async (req, res) => {
         // // Cek di Redis apakah ada cache untuk pesanan masuk dari consumer
         const ordersAllCache = await redis.get(`orders:all:${sellerID}`);
 
-        if (ordersAllCache) {
+        if (!ordersAllCache) {
             return res.status(404).json({
                 message: "No orders (seller) cache found",
             });

@@ -6,6 +6,7 @@ const redis = require('../../config/redis');
 
 // get all orders (cache-aside)
 router.get("/all", async (req, res) => {
+    let client;
     try {
         const consumerID = req.user.id;
         // Cek di Redis apakah ada cache untuk transaksi
@@ -147,7 +148,8 @@ router.put("/update/:id", async (req, res) => {
         const { status } = req.body;
 
         const query = `
-            UPDATE transaction SET status = $1 WHERE id = $2`;
+            UPDATE transaction SET status = $1 WHERE id = $2
+                RETURNING id_consumer`;
 
         const result = await client.query(query, [status, transactionID]);
         if (result.rowCount === 0) {
@@ -156,6 +158,8 @@ router.put("/update/:id", async (req, res) => {
             });
         }
 
+        // dapatkan id_consumer yang data transaksinya diupdate
+        const consumerID = result.rows[0].id_consumer;
         // Hapus cache Redis untuk semua transaksi milik consumer id tersebut
         await redis.del(`transactions:all:${consumerID}`);
 
