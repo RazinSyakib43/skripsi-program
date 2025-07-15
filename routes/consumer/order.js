@@ -46,7 +46,7 @@ router.get("/all", async (req, res) => {
             const result = await client.query(query, [consumerID]);
             if (result.rows.length === 0) {
                 return res.status(404).json({
-                    message: "No orders found",
+                    message: "No orders consumer found",
                 });
             }
 
@@ -81,14 +81,14 @@ router.get("/all-cachehit", async (req, res) => {
 
         if (!ordersAllCache) {
             return res.status(404).json({
-                message: "No orders cache found",
+                message: "No orders (consumer) cache found",
             });
         }
 
         const JSONparse = JSON.parse(ordersAllCache);
 
         return res.status(200).json({
-            message: "Success - All orders (Redis Cache)",
+            message: "Success - All orders 2 (Redis Cache)",
             data: JSONparse,
         });
     } catch (err) {

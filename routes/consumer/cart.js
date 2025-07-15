@@ -72,13 +72,13 @@ router.get("/cachehit", async (req, res) => {
 
         if (!cartAllCache) {
             return res.status(404).json({
-                message: "No cart data cache found",
+                message: "No cart cache found",
             });
         }
 
         const JSONparse = JSON.parse(cartAllCache);
         return res.status(200).json({
-            message: "Success - All cart items (Redis Cache)",
+            message: "Success - All cart items 2 (Redis Cache)",
             data: JSONparse,
         });
     } catch (err) {

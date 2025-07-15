@@ -91,7 +91,7 @@ router.get("/all-cachehit", async (req, res) => {
         const JSONparse = JSON.parse(ordersAllCache);
 
         return res.status(200).json({
-            message: "Success - All orders (Redis Cache)",
+            message: "Success - All orders 2 (Redis Cache)",
             data: JSONparse,
         });
     } catch (err) {

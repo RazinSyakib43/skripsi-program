@@ -79,13 +79,13 @@ router.get("/all-cachehit", async (req, res) => {
 
         if (!transactionsCache) {
             return res.status(404).json({
-                message: "No transactions data cache found",
+                message: "No transactions cache found",
             });
         }
 
         const JSONparse = JSON.parse(transactionsCache);
         return res.status(200).json({
-            message: "Success - All transactions (Redis Cache)",
+            message: "Success - All transactions 2 (Redis Cache)",
             data: JSONparse,
         });
     } catch (err) {

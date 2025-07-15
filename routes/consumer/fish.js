@@ -68,13 +68,13 @@ router.get("/all-cachehit", async (req, res) => {
 
         if (!fishAllCache) {
             return res.status(404).json({
-                message: "No all fish data cache found",
+                message: "No all fish cache found",
             });
         }
 
         const JSONparse = JSON.parse(fishAllCache);
         return res.status(200).json({
-            message: "Success - All fish (Redis Cache)",
+            message: "Success - All fish 2 (Redis Cache)",
             data: JSONparse,
         });
     } catch (err) {
@@ -154,13 +154,13 @@ router.get("/cari-cachehit/", async (req, res) => {
 
         if (!searchDataRedis) {
             return res.status(404).json({
-                message: "No search data cache found",
+                message: "No search fish cache found",
             });
         }
 
         const JSONparse = JSON.parse(searchDataRedis);
         return res.status(200).json({
-            message: "Success - Search fish (Redis Cache)",
+            message: "Success - Search fish 2 (Redis Cache)",
             data: JSONparse,
         });
     } catch (err) {
@@ -190,7 +190,7 @@ router.get("/detail/:id", async (req, res) => {
             JSONparse.weight = weightDetailDB.rows[0].weight;
 
             return res.status(200).json({
-                message: `Success - Detail fish ${fishId} (Redis Cache)`,
+                message: `Success - Detail fish (Redis Cache)`,
                 data: JSONparse,
             });
         } else if (!fishDetailCache) {
@@ -223,7 +223,7 @@ router.get("/detail/:id", async (req, res) => {
             await redis.set(`fish:detail:${fishId}`, JSON.stringify(result.rows[0]));
 
             return res.status(200).json({
-                message: `Success - Detail fish ${fishId} (PostgreSQL)`,
+                message: `Success - Detail fish (PostgreSQL)`,
                 data: result.rows[0],
             });
         }
@@ -262,7 +262,7 @@ router.get("/detail-cachehit/:id", async (req, res) => {
         JSONparse.weight = weightDetailDB.rows[0].weight;
 
         return res.status(200).json({
-            message: `Success - Detail fish ${fishId} (Redis Cache)`,
+            message: `Success - Detail fish 2 (Redis Cache)`,
             data: JSONparse,
         });
     } catch (err) {
