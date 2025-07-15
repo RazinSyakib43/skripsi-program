@@ -5,10 +5,10 @@ const db = require('../../config/db');
 
 router.get("/all", async (req, res) => {
     let client;
-    try {
-        client = await db.connect();
-
+    try {        
         const sellerID = req.user.id;
+
+        client = await db.connect();
         const query = `
             SELECT
                 o.id AS id_ordering,
@@ -42,8 +42,7 @@ router.get("/all", async (req, res) => {
             });
         }
         return res.status(200).json({
-            length: result.rows.length,
-            message: "Success - All orders (PostgreSQL)",
+            message: "Success - All orders seller (PostgreSQL)",
             data: result.rows,
         });
     } catch (err) {

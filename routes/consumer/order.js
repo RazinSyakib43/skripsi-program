@@ -6,9 +6,9 @@ const db = require('../../config/db');
 router.get("/all", async (req, res) => {
     let client;
     try {
-        client = await db.connect();
-
         const consumerID = req.user.id;
+
+        client = await db.connect();
         const query = `
             SELECT
                 o.id AS id_ordering,
@@ -35,12 +35,11 @@ router.get("/all", async (req, res) => {
         const result = await client.query(query, [consumerID]);
         if (result.rows.length === 0) {
             return res.status(404).json({
-                message: "No orders found",
+                message: "No orders consumer found",
             });
         }
         return res.status(200).json({
-            length: result.rows.length,
-            message: "Success - All orders (PostgreSQL)",
+            message: "Success - All orders consumer (PostgreSQL)",
             data: result.rows,
         });
     } catch (err) {
@@ -93,10 +92,10 @@ router.post('/create', async (req, res) => {
 router.post('/create/detail', async (req, res) => {
     let client;
     try {
-        client = await db.connect();
-
         const consumerID = req.user.id;
         const orderingID = req.body.idOrdering;
+
+        client = await db.connect();
 
         const queryCheckOrdering = `
             SELECT id FROM ordering

@@ -32,7 +32,6 @@ router.get("/", async (req, res) =>  {
             });
         }
         return res.status(200).json({
-            length: result.rows.length,
             message: "Success - All cart items (PostgreSQL)",
             data: result.rows,
         });
@@ -52,10 +51,10 @@ router.get("/", async (req, res) =>  {
 router.post("/add", async (req, res) => {
     let client;
     try {
-        client = await db.connect();
-
         const { id_fish, notes, weight } = req.body;
         const consumerID = req.user.id;
+
+        client = await db.connect();
 
         // Check jika item sudah ada di keranjangs
         // pakai 1 karena gak butuh datanya, cuma cek datanya ada atau gk

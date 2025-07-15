@@ -3,7 +3,7 @@ const router = express.Router();
 
 const db = require('../../config/db');
 
-router.get("/all", async (req, res, next) => {
+router.get("/all", async (req, res) => {
     let client;
     try {
         client = await db.connect();
@@ -20,18 +20,16 @@ router.get("/all", async (req, res, next) => {
         ON f.id_seller = s.id`;
 
         const result = await client.query(query);
-        if (result.rows.length === 0 || !result.rows) {
+        if (result.rows.length === 0) {
             return res.status(404).json({
                 message: "No fish found",
             });
         }
         return res.status(200).json({
-            length: result.rows.length,
             message: "Success - All fish (PostgreSQL)",
             data: result.rows,
         });
-    }
-    catch (err) {
+    } catch (err) {
         // console.error("Error fetching all fish:", err);
         return res.status(500).json({
             message: "Internal Server Error",
@@ -44,7 +42,7 @@ router.get("/all", async (req, res, next) => {
     }
 });
 
-router.get("/cari/", async (req, res, next) => {
+router.get("/cari/", async (req, res) => {
     let client;
     const fishName = req.query.namaIkan;
     try {
@@ -63,18 +61,16 @@ router.get("/cari/", async (req, res, next) => {
         ILIKE $1`;
 
         const result = await client.query(query, [`%${fishName}%`]);
-        if (result.rows.length === 0 || !result.rows) {
+        if (result.rows.length === 0) {
             return res.status(404).json({
                 message: "Fish not found",
             });
         }
         return res.status(200).json({
-            length: result.rows.length,
             message: "Success - Search fish (PostgreSQL)",
             data: result.rows,
         });
-    }
-    catch (err) {
+    } catch (err) {
         // console.error("Error searching for fish:", err);
         return res.status(500).json({
             message: "Internal Server Error",
@@ -87,7 +83,7 @@ router.get("/cari/", async (req, res, next) => {
     }
 });
 
-router.get("/detail/:id", async (req, res, next) => {
+router.get("/detail/:id", async (req, res) => {
     let client;
     const fishId = req.params.id;
     try {
@@ -110,18 +106,16 @@ router.get("/detail/:id", async (req, res, next) => {
         WHERE f.id = $1`;
 
         const result = await client.query(query, [fishId]);
-        if (result.rows.length === 0 || !result.rows) {
+        if (result.rows.length === 0) {
             return res.status(404).json({
                 message: "Fish not found",
             });
         }
         return res.status(200).json({
-            length: result.rows.length,
-            message: `Success - Detail fish ${fishId} (PostgreSQL)`,
+            message: `Success - Detail fish (PostgreSQL)`,
             data: result.rows[0],
         });
-    }
-    catch (err) {
+    } catch (err) {
         // console.error("Error fetching fish details:", err);
         return res.status(500).json({
             message: "Internal Server Error",

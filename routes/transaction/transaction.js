@@ -5,9 +5,9 @@ const db = require('../../config/db');
 
 router.get("/all", async (req, res) => {
     try {
-        client = await db.connect();
-
         const consumerID = req.user.id;
+
+        client = await db.connect();
         const query = `
             SELECT
                 t.id AS id_transaction,
@@ -38,7 +38,6 @@ router.get("/all", async (req, res) => {
             });
         }
         return res.status(200).json({
-            length: result.rows.length,
             message: "Success - All transactions (PostgreSQL)",
             data: result.rows,
         });
@@ -57,11 +56,10 @@ router.get("/all", async (req, res) => {
 
 router.post("/create", async (req, res) => {
     try {
-        client = await db.connect();
-
         const consumerID = req.user.id;
         const { id_external, idOrdering, created, paid_at, status } = req.body;
 
+        client = await db.connect();
         const query = `
         INSERT INTO transaction (id_external, id_consumer, dates_transaction, dates_payed, id_ordering, status)
         VALUES ($1, $2, $3, $4, $5, $6)
@@ -74,6 +72,7 @@ router.post("/create", async (req, res) => {
                 message: "Failed to create transaction",
             });
         }
+
         return res.status(201).json({
             message: "Transaction created successfully",
             transaction_id: result.rows[0].transaction_id,
@@ -93,13 +92,13 @@ router.post("/create", async (req, res) => {
 
 router.put("/update/:id", async (req, res) => {
     try {
-        client = await db.connect();
-
         const transactionID = req.params.id;
         const { status } = req.body;
 
+        client = await db.connect();
         const query = `
-            UPDATE transaction SET status = $1 WHERE id = $2`;
+            UPDATE transaction SET status = $1 WHERE id = $2
+                RETURNING id_consumer`;
 
         const result = await client.query(query, [status, transactionID]);
         if (result.rowCount === 0) {
@@ -107,6 +106,7 @@ router.put("/update/:id", async (req, res) => {
                 message: "Transaction not found",
             });
         }
+
         return res.status(200).json({
             message: "Transaction updated successfully",
         });
