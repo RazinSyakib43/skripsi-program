@@ -15,7 +15,7 @@ router.get("/all", async (req, res) => {
 
         if (ordersAllCache) {
             return res.status(200).json({
-                message: "Success - All orders (Redis Cache)",
+                message: "Success - All orders consumer (Redis Cache)",
                 data: JSON.parse(ordersAllCache),
             });
         } else {
@@ -54,7 +54,7 @@ router.get("/all", async (req, res) => {
             await redis.set(`orders:all:${consumerID}`, JSON.stringify(result.rows));
 
             return res.status(200).json({
-                message: "Success - All orders (PostgreSQL)",
+                message: "Success - All orders consumer (PostgreSQL)",
                 data: result.rows,
             });
         }
@@ -88,7 +88,7 @@ router.get("/all-cachehit", async (req, res) => {
         const JSONparse = JSON.parse(ordersAllCache);
 
         return res.status(200).json({
-            message: "Success - All orders 2 (Redis Cache)",
+            message: "Success - All orders consumer 2 (Redis Cache)",
             data: JSONparse,
         });
     } catch (err) {
@@ -199,7 +199,7 @@ router.post('/create/detail', async (req, res) => {
             await redis.del(`cart:all:${consumerID}`);
 
             return res.status(201).json({
-                id_ordering: consumerID,
+                id_ordering: orderingID,
                 message: "Order details created successfully",
             });
         }

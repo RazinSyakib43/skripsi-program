@@ -57,7 +57,7 @@ router.get("/all", async (req, res) => {
             await redis.set(`orders:all:${sellerID}`, JSON.stringify(result.rows));
 
             return res.status(200).json({
-                message: "Success - All orders (PostgreSQL)",
+                message: "Success - All orders seller (PostgreSQL)",
                 data: result.rows,
             });
         }

@@ -131,8 +131,7 @@ router.get("/cari/", async (req, res) => {
                 data: result.rows,
             });
         }
-    }
-    catch (err) {
+    } catch (err) {
         // console.error("Error searching for fish:", err);
         return res.status(500).json({
             message: "Internal Server Error",

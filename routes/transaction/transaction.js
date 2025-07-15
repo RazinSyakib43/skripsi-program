@@ -99,11 +99,10 @@ router.get("/all-cachehit", async (req, res) => {
 
 router.post("/create", async (req, res) => {
     try {
-        client = await db.connect();
-
         const consumerID = req.user.id;
         const { id_external, idOrdering, created, paid_at, status } = req.body;
 
+        client = await db.connect();
         const query = `
         INSERT INTO transaction (id_external, id_consumer, dates_transaction, dates_payed, id_ordering, status)
         VALUES ($1, $2, $3, $4, $5, $6)
@@ -139,11 +138,10 @@ router.post("/create", async (req, res) => {
 
 router.put("/update/:id", async (req, res) => {
     try {
-        client = await db.connect();
-
         const transactionID = req.params.id;
         const { status } = req.body;
 
+        client = await db.connect();
         const query = `
             UPDATE transaction SET status = $1 WHERE id = $2
                 RETURNING id_consumer`;
