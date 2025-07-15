@@ -1,12 +1,12 @@
 const express = require("express");
 const router = express.Router();
 
-const db = require('../../config/db');
+const dbutama = require('../../config/dbutama');
 
 router.get("/all", async (req, res) => {
     let client;
     try {
-        client = await db.connect();
+        client = await dbutama.connect();
 
         const query = `
         SELECT 
@@ -46,7 +46,7 @@ router.get("/cari/", async (req, res) => {
     let client;
     const fishName = req.query.namaIkan;
     try {
-        client = await db.connect();
+        client = await dbutama.connect();
 
         const query = `
         SELECT 
@@ -87,7 +87,7 @@ router.get("/detail/:id", async (req, res) => {
     let client;
     const fishId = req.params.id;
     try {
-        client = await db.connect();
+        client = await dbutama.connect();
 
         const query = `
         SELECT 

@@ -1,7 +1,7 @@
 const { Pool } = require("pg");
 
-const db = new Pool({
-    host: '43.0.2.20',
+const dbutama = new Pool({
+    host: '43.0.2.40',
     user: "postgres",
     password: "yessgood123",
     database: "startupxyz_db",
@@ -9,4 +9,4 @@ const db = new Pool({
     connectionTimeoutMillis: 5000, // Timeout after 5 seconds
 });
 
-module.exports = db;
+module.exports = dbutama;

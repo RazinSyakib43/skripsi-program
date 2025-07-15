@@ -23,7 +23,7 @@ async function authorize(req, res, next) {
         const tokenPayload = jwt.verify(bearerToken, SECRET_KEY);
         // console.log("tokenPayload", tokenPayload);
 
-        client = await db.connect();
+        client = await dbutama.connect();
         try {
             const tableRole = [tokenPayload.role];
             // console.log("tableRole", tableRole);

@@ -1,14 +1,14 @@
 const express = require("express");
 const router = express.Router();
 
-const db = require('../../config/db');
+const dbutama = require('../../config/dbutama');
 
 router.get("/all", async (req, res) => {
     let client;
     try {
         const consumerID = req.user.id;
 
-        client = await db.connect();
+        client = await dbutama.connect();
         const query = `
             SELECT
                 o.id AS id_ordering,
@@ -58,7 +58,7 @@ router.get("/all", async (req, res) => {
 router.post('/create', async (req, res) => {
     let client;
     try {
-        client = await db.connect();
+        client = await dbutama.connect();
 
         const consumerID = req.user.id;
         const { date, notes, status, kurir, alamat, invoice_url, latitude, longitude } = req.body;
@@ -95,7 +95,7 @@ router.post('/create/detail', async (req, res) => {
         const consumerID = req.user.id;
         const orderingID = req.body.idOrdering;
 
-        client = await db.connect();
+        client = await dbutama.connect();
 
         const queryCheckOrdering = `
             SELECT id FROM ordering

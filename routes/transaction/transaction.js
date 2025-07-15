@@ -1,13 +1,13 @@
 const express = require("express");
 const router = express.Router();
 
-const db = require('../../config/db');
+const dbutama = require('../../config/dbutama');
 
 router.get("/all", async (req, res) => {
     try {
         const consumerID = req.user.id;
 
-        client = await db.connect();
+        client = await dbutama.connect();
         const query = `
             SELECT
                 t.id AS id_transaction,
@@ -59,7 +59,7 @@ router.post("/create", async (req, res) => {
         const consumerID = req.user.id;
         const { id_external, idOrdering, created, paid_at, status } = req.body;
 
-        client = await db.connect();
+        client = await dbutama.connect();
         const query = `
         INSERT INTO transaction (id_external, id_consumer, dates_transaction, dates_payed, id_ordering, status)
         VALUES ($1, $2, $3, $4, $5, $6)
@@ -95,7 +95,7 @@ router.put("/update/:id", async (req, res) => {
         const transactionID = req.params.id;
         const { status } = req.body;
 
-        client = await db.connect();
+        client = await dbutama.connect();
         const query = `
             UPDATE transaction SET status = $1 WHERE id = $2
                 RETURNING id_consumer`;

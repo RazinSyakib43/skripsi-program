@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const db = require('../../config/db');
+const dbutama = require('../../config/dbutama');
 
 const { generateToken } = require("../../utils/token");
 const { checkPassword } = require("../../utils/encrypt");
@@ -17,7 +17,7 @@ router.get("/test", (req, res) => {
 router.post("/login", async (req, res) => {
     let client;
     try {
-        client = await db.connect();
+        client = await dbutama.connect();
 
         const { email, password } = req.body;
 

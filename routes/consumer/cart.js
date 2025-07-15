@@ -1,12 +1,12 @@
 const express = require("express");
 const router = express.Router();
 
-const db = require('../../config/db');
+const dbutama = require('../../config/dbutama');
 
 router.get("/", async (req, res) =>  {
     let client;
     try {
-        client = await db.connect();
+        client = await dbutama.connect();
 
         const consumerID = req.user.id;
         const query = `
@@ -54,7 +54,7 @@ router.post("/add", async (req, res) => {
         const { id_fish, notes, weight } = req.body;
         const consumerID = req.user.id;
 
-        client = await db.connect();
+        client = await dbutama.connect();
 
         // Check jika item sudah ada di keranjangs
         // pakai 1 karena gak butuh datanya, cuma cek datanya ada atau gk

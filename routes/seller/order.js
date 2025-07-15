@@ -1,14 +1,14 @@
 const express = require("express");
 const router = express.Router();
 
-const db = require('../../config/db');
+const dbutama = require('../../config/dbutama');
 
 router.get("/all", async (req, res) => {
     let client;
     try {        
         const sellerID = req.user.id;
 
-        client = await db.connect();
+        client = await dbutama.connect();
         const query = `
             SELECT
                 o.id AS id_ordering,
