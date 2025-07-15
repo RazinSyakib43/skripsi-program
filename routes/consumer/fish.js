@@ -114,7 +114,7 @@ router.get("/cari/", async (req, res) => {
             JOIN seller s
             ON f.id_seller = s.id
             WHERE f.name
-            LIKE $1`;
+            ILIKE $1`;
 
             const result = await client.query(query, [`%${fishName}%`]);
             if (result.rows.length === 0) {
