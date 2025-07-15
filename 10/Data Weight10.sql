@@ -1,0 +1,10 @@
+INSERT INTO weight(id,weight) VALUES (1,100);
+INSERT INTO weight(id,weight) VALUES (2,86);
+INSERT INTO weight(id,weight) VALUES (3,91);
+INSERT INTO weight(id,weight) VALUES (4,25);
+INSERT INTO weight(id,weight) VALUES (5,75);
+INSERT INTO weight(id,weight) VALUES (6,95);
+INSERT INTO weight(id,weight) VALUES (7,24);
+INSERT INTO weight(id,weight) VALUES (8,39);
+INSERT INTO weight(id,weight) VALUES (9,55);
+INSERT INTO weight(id,weight) VALUES (10,35);
