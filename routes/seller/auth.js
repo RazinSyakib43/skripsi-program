@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const dbutama = require('../../config/dbutama');
+const dbreplica = require('../../config/dbreplica');
 
 const { generateToken } = require("../../utils/token");
 const { checkPassword } = require("../../utils/encrypt");
@@ -15,9 +15,9 @@ router.get("/test", (req, res) => {
 
 // login
 router.post("/login", async (req, res) => {
-    let client;
+    let clientReplica;
     try {
-        client = await dbutama.connect();
+        clientReplica = await dbreplica.connect();
 
         const { email, password } = req.body;
 
@@ -27,7 +27,7 @@ router.post("/login", async (req, res) => {
             });
         }
 
-        const query = await client.query(
+        const query = await clientReplica.query(
             `SELECT * FROM seller WHERE email = $1`,
             [email]
         );
@@ -59,8 +59,8 @@ router.post("/login", async (req, res) => {
             error: err.message,
         });
     } finally {
-        if (client) {
-            client.release();
+        if (clientReplica) {
+            clientReplica.release();
         }
     }
 });

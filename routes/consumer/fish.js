@@ -1,12 +1,12 @@
 const express = require("express");
 const router = express.Router();
 
-const dbutama = require('../../config/dbutama');
+const dbreplica = require('../../config/dbreplica');
 
 router.get("/all", async (req, res) => {
-    let client;
+    let clientReplica;
     try {
-        client = await dbutama.connect();
+        clientReplica = await dbreplica.connect();
 
         const query = `
         SELECT 
@@ -19,7 +19,7 @@ router.get("/all", async (req, res) => {
         JOIN seller s 
         ON f.id_seller = s.id`;
 
-        const result = await client.query(query);
+        const result = await clientReplica.query(query);
         if (result.rows.length === 0) {
             return res.status(404).json({
                 message: "No fish found",
@@ -36,17 +36,17 @@ router.get("/all", async (req, res) => {
             error: err.message,
         });
     } finally {
-        if (client) {
-            client.release();
+        if (clientReplica) {
+            clientReplica.release();
         }
     }
 });
 
 router.get("/cari/", async (req, res) => {
-    let client;
+    let clientReplica;
     const fishName = req.query.namaIkan;
     try {
-        client = await dbutama.connect();
+        clientReplica = await dbreplica.connect();
 
         const query = `
         SELECT 
@@ -58,9 +58,9 @@ router.get("/cari/", async (req, res) => {
         JOIN seller s
         ON f.id_seller = s.id
         WHERE f.name
-        LIKE $1`;
+        ILIKE $1`;
 
-        const result = await client.query(query, [`%${fishName}%`]);
+        const result = await clientReplica.query(query, [`%${fishName}%`]);
         if (result.rows.length === 0) {
             return res.status(404).json({
                 message: "Fish not found",
@@ -77,17 +77,17 @@ router.get("/cari/", async (req, res) => {
             error: err.message,
         });
     } finally {
-        if (client) {
-            client.release();
+        if (clientReplica) {
+            clientReplica.release();
         }
     }
 });
 
 router.get("/detail/:id", async (req, res) => {
-    let client;
+    let clientReplica;
     const fishId = req.params.id;
     try {
-        client = await dbutama.connect();
+        clientReplica = await dbreplica.connect();
 
         const query = `
         SELECT 
@@ -105,7 +105,7 @@ router.get("/detail/:id", async (req, res) => {
         JOIN weight w ON f.id_weight = w.id
         WHERE f.id = $1`;
 
-        const result = await client.query(query, [fishId]);
+        const result = await clientReplica.query(query, [fishId]);
         if (result.rows.length === 0) {
             return res.status(404).json({
                 message: "Fish not found",
@@ -122,8 +122,8 @@ router.get("/detail/:id", async (req, res) => {
             error: err.message,
         });
     } finally {
-        if (client) {
-            client.release();
+        if (clientReplica) {
+            clientReplica.release();
         }
     }
 });

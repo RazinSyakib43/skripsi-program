@@ -2,12 +2,14 @@ const express = require("express");
 const router = express.Router();
 
 const dbutama = require('../../config/dbutama');
+const dbreplica = require('../../config/dbreplica');
 
 router.get("/all", async (req, res) => {
+    let clientReplica;
     try {
         const consumerID = req.user.id;
 
-        client = await dbutama.connect();
+        clientReplica = await dbreplica.connect();
         const query = `
             SELECT
                 t.id AS id_transaction,
@@ -31,7 +33,7 @@ router.get("/all", async (req, res) => {
                 WHERE t.id_consumer = $1
                 GROUP BY t.id, t.status, t.dates_transaction, t.dates_payed, o.id`;
 
-        const result = await client.query(query, [consumerID]);
+        const result = await clientReplica.query(query, [consumerID]);
         if (result.rows.length === 0) {
             return res.status(404).json({
                 message: "No transactions found",
@@ -48,30 +50,26 @@ router.get("/all", async (req, res) => {
             error: err.message,
         });
     } finally {
-        if (client) {
-            client.release();
+        if (clientReplica) {
+            clientReplica.release();
         }
     }
 });
 
 router.post("/create", async (req, res) => {
+    let clientUtama;
     try {
         const consumerID = req.user.id;
         const { id_external, idOrdering, created, paid_at, status } = req.body;
 
-        client = await dbutama.connect();
+        clientUtama = await dbutama.connect();
         const query = `
         INSERT INTO transaction (id_external, id_consumer, dates_transaction, dates_payed, id_ordering, status)
-        VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING id AS transaction_id`;
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING id AS transaction_id`;
 
         const values = [id_external, consumerID, created, paid_at, idOrdering, status];
-        const result = await client.query(query, values);
-        if (result.rows.length === 0) {
-            return res.status(400).json({
-                message: "Failed to create transaction",
-            });
-        }
+        const result = await clientUtama.query(query, values);
 
         return res.status(201).json({
             message: "Transaction created successfully",
@@ -84,28 +82,24 @@ router.post("/create", async (req, res) => {
             error: err.message,
         });
     } finally {
-        if (client) {
-            client.release();
+        if (clientUtama) {
+            clientUtama.release();
         }
     }
 });
 
 router.put("/update/:id", async (req, res) => {
+    let clientUtama;
     try {
         const transactionID = req.params.id;
         const { status } = req.body;
 
-        client = await dbutama.connect();
+        clientUtama = await dbutama.connect();
         const query = `
             UPDATE transaction SET status = $1 WHERE id = $2
                 RETURNING id_consumer`;
 
-        const result = await client.query(query, [status, transactionID]);
-        if (result.rowCount === 0) {
-            return res.status(404).json({
-                message: "Transaction not found",
-            });
-        }
+        await clientUtama.query(query, [status, transactionID]);
 
         return res.status(200).json({
             message: "Transaction updated successfully",
@@ -117,8 +111,8 @@ router.put("/update/:id", async (req, res) => {
             error: err.message,
         });
     } finally {
-        if (client) {
-            client.release();
+        if (clientUtama) {
+            clientUtama.release();
         }
     }
 });

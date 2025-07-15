@@ -2,13 +2,14 @@ const express = require("express");
 const router = express.Router();
 
 const dbutama = require('../../config/dbutama');
+const dbreplica = require('../../config/dbreplica');
 
 router.get("/all", async (req, res) => {
-    let client;
+    let clientReplica;
     try {
         const consumerID = req.user.id;
 
-        client = await dbutama.connect();
+        clientReplica = await dbreplica.connect();
         const query = `
             SELECT
                 o.id AS id_ordering,
@@ -32,7 +33,7 @@ router.get("/all", async (req, res) => {
             WHERE dor.id_consumer = $1
             GROUP BY o.id, o.date, o.status;`;
 
-        const result = await client.query(query, [consumerID]);
+        const result = await clientReplica.query(query, [consumerID]);
         if (result.rows.length === 0) {
             return res.status(404).json({
                 message: "No orders consumer found",
@@ -49,16 +50,16 @@ router.get("/all", async (req, res) => {
             error: err.message,
         });
     } finally {
-        if (client) {
-            client.release();
+        if (clientReplica) {
+            clientReplica.release();
         }
     }
 });
 
 router.post('/create', async (req, res) => {
-    let client;
+    let clientUtama;
     try {
-        client = await dbutama.connect();
+        clientUtama = await dbutama.connect();
 
         const consumerID = req.user.id;
         const { date, notes, status, kurir, alamat, invoice_url, latitude, longitude } = req.body;
@@ -68,7 +69,7 @@ router.post('/create', async (req, res) => {
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             RETURNING id AS id_ordering`;
 
-        const result = await client.query(query, [
+        const result = await clientUtama.query(query, [
             consumerID, date, notes, status, kurir, alamat, invoice_url, latitude, longitude
         ]);
 
@@ -83,29 +84,30 @@ router.post('/create', async (req, res) => {
             error: err.message,
         });
     } finally {
-        if (client) {
-            client.release();
+        if (clientUtama) {
+            clientUtama.release();
         }
     }
 });
 
 router.post('/create/detail', async (req, res) => {
-    let client;
+    let clientUtama;
+    let clientReplica;
     try {
         const consumerID = req.user.id;
         const orderingID = req.body.idOrdering;
 
-        client = await dbutama.connect();
+        clientReplica = await dbreplica.connect();
 
         const queryCheckOrdering = `
             SELECT id FROM ordering
             WHERE id = $1 AND status = 'PENDING'`;
-        const resultCheckOrdering = await client.query(queryCheckOrdering, [orderingID]);
+        const resultCheckOrdering = await clientReplica.query(queryCheckOrdering, [orderingID]);
 
         const queryGetCart = `
-            SELECT * FROM cart 
-            WHERE id_consumer = $1`;
-        const resultGetCart = await client.query(queryGetCart, [consumerID]);
+            SELECT id_fish, weight
+            FROM cart WHERE id_consumer = $1`;
+        const resultGetCart = await clientReplica.query(queryGetCart, [consumerID]);
         if (resultGetCart.rows.length === 0) {
             return res.status(404).json({
                 message: "Cart is empty",
@@ -117,8 +119,9 @@ router.post('/create/detail', async (req, res) => {
                 message: "No pending order with this ID found",
             });
         } else {
+            clientUtama = await dbutama.connect();
             // mulai transaksi
-            await client.query('BEGIN');
+            await clientUtama.query('BEGIN');
 
             const cartItems = resultGetCart.rows;
 
@@ -127,11 +130,11 @@ router.post('/create/detail', async (req, res) => {
                 VALUES ($1, $2, $3, $4)`;
 
             for (const item of cartItems) {
-                await client.query(queryInsertDetailOrdering, [consumerID, orderingID, item.id_fish, item.weight]);
+                await clientUtama.query(queryInsertDetailOrdering, [consumerID, orderingID, item.id_fish, item.weight]);
             }
             // Menghapus item dari keranjang setelah order dibuat
             const queryClearCart = `DELETE FROM cart WHERE id_consumer = $1`;
-            await client.query(queryClearCart, [consumerID]);
+            await clientUtama.query(queryClearCart, [consumerID]);
 
             // Mengurangi weight dari fish yang dipesan
             const queryUpdateFishWeight = `
@@ -141,11 +144,11 @@ router.post('/create/detail', async (req, res) => {
                 WHERE weight.id = fish.id_weight AND fish.id = $2`;
 
             for (const item of cartItems) {
-                await client.query(queryUpdateFishWeight, [item.weight, item.id_fish]);
+                await clientUtama.query(queryUpdateFishWeight, [item.weight, item.id_fish]);
             }
 
             // commit alias menyimpan perubahan ke database
-            await client.query('COMMIT');
+            await clientUtama.query('COMMIT');
 
             return res.status(201).json({
                 id_ordering: orderingID,
@@ -154,8 +157,8 @@ router.post('/create/detail', async (req, res) => {
         }
     } catch (err) {
         // rollback alias membatalkan transaksi jika ada error
-        if (client) {
-            await client.query('ROLLBACK');
+        if (clientUtama) {
+            await clientUtama.query('ROLLBACK');
         }
         // console.error("Error creating order details:", err);
         return res.status(500).json({
@@ -163,8 +166,11 @@ router.post('/create/detail', async (req, res) => {
             error: err.message,
         });
     } finally {
-        if (client) {
-            client.release();
+        if (clientUtama) {
+            clientUtama.release();
+        }
+        if (clientReplica) {
+            clientReplica.release();
         }
     }
 });

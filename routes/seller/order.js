@@ -1,14 +1,14 @@
 const express = require("express");
 const router = express.Router();
 
-const dbutama = require('../../config/dbutama');
+const dbreplica = require('../../config/dbreplica');
 
 router.get("/all", async (req, res) => {
-    let client;
+    let clientReplica;
     try {        
         const sellerID = req.user.id;
 
-        client = await dbutama.connect();
+        clientReplica = await dbreplica.connect();
         const query = `
             SELECT
                 o.id AS id_ordering,
@@ -35,7 +35,7 @@ router.get("/all", async (req, res) => {
             WHERE f.id_seller = $1 AND t.status = 'PAID'
             GROUP BY o.id, o.date, c.name, c.address, o.status, t.status`;
 
-        const result = await client.query(query, [sellerID]);
+        const result = await clientReplica.query(query, [sellerID]);
         if (result.rows.length === 0) {
             return res.status(404).json({
                 message: "No orders found",
@@ -52,8 +52,8 @@ router.get("/all", async (req, res) => {
             error: err.message,
         });
     } finally {
-        if (client) {
-            client.release();
+        if (clientReplica) {
+            clientReplica.release();
         }
     }
 });
