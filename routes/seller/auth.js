@@ -16,16 +16,17 @@ router.get("/test", (req, res) => {
 // login
 router.post("/login", async (req, res) => {
     let clientReplica;
+
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({
+            message: "Email and password are required",
+        });
+    }
+
     try {
         clientReplica = await dbreplica.connect();
-
-        const { email, password } = req.body;
-
-        if (!email || !password) {
-            return res.status(400).json({
-                message: "Email and password are required",
-            });
-        }
 
         const query = await clientReplica.query(
             `SELECT * FROM seller WHERE email = $1`,

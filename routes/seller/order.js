@@ -5,9 +5,9 @@ const dbreplica = require('../../config/dbreplica');
 
 router.get("/all", async (req, res) => {
     let clientReplica;
-    try {        
-        const sellerID = req.user.id;
+    const sellerID = req.user.id;
 
+    try {        
         clientReplica = await dbreplica.connect();
         const query = `
             SELECT

@@ -45,6 +45,13 @@ router.get("/all", async (req, res) => {
 router.get("/cari/", async (req, res) => {
     let clientReplica;
     const fishName = req.query.namaIkan;
+
+    if (!fishName) {
+        return res.status(400).json({
+            message: "Search Fish - Missing fish name",
+        });
+    }
+
     try {
         clientReplica = await dbreplica.connect();
 
@@ -86,6 +93,13 @@ router.get("/cari/", async (req, res) => {
 router.get("/detail/:id", async (req, res) => {
     let clientReplica;
     const fishId = req.params.id;
+
+    if (!fishId) {
+        return res.status(400).json({
+            message: "Detail Fish - Missing fish ID",
+        });
+    }
+
     try {
         clientReplica = await dbreplica.connect();
 

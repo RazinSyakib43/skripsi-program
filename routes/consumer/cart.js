@@ -4,12 +4,14 @@ const router = express.Router();
 const dbutama = require('../../config/dbutama');
 const dbreplica = require('../../config/dbreplica');
 
-router.get("/", async (req, res) =>  {
+router.get("/", async (req, res) => {
     let clientReplica;
+
+    const consumerID = req.user.id;
+
     try {
         clientReplica = await dbreplica.connect();
 
-        const consumerID = req.user.id;
         const query = `
             SELECT 
                 c.id AS id_cart, 
@@ -52,10 +54,17 @@ router.get("/", async (req, res) =>  {
 router.post("/add", async (req, res) => {
     let clientUtama;
     let clientReplica;
-    try {
-        const { id_fish, notes, weight } = req.body;
-        const consumerID = req.user.id;
 
+    const { id_fish, notes, weight } = req.body;
+    const consumerID = req.user.id;
+
+    if (!id_fish || !notes || !weight) {
+        return res.status(400).json({
+            message: "Add Cart - Missing required fields",
+        });
+    }
+
+    try {
         clientReplica = await dbreplica.connect();
 
         // Check jika item sudah ada di keranjangs

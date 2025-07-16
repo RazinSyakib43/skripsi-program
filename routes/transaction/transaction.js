@@ -6,9 +6,9 @@ const dbreplica = require('../../config/dbreplica');
 
 router.get("/all", async (req, res) => {
     let clientReplica;
-    try {
-        const consumerID = req.user.id;
+    const consumerID = req.user.id;
 
+    try {
         clientReplica = await dbreplica.connect();
         const query = `
             SELECT
@@ -58,10 +58,17 @@ router.get("/all", async (req, res) => {
 
 router.post("/create", async (req, res) => {
     let clientUtama;
-    try {
-        const consumerID = req.user.id;
-        const { id_external, idOrdering, created, paid_at, status } = req.body;
 
+    const consumerID = req.user.id;
+    const { id_external, idOrdering, created, paid_at, status } = req.body;
+
+    if (!id_external || !idOrdering || !created || !paid_at || !status) {
+        return res.status(400).json({
+            message: "Create transaction - Missing required fields",
+        });
+    }
+
+    try {
         clientUtama = await dbutama.connect();
         const query = `
         INSERT INTO transaction (id_external, id_consumer, dates_transaction, dates_payed, id_ordering, status)
@@ -90,10 +97,17 @@ router.post("/create", async (req, res) => {
 
 router.put("/update/:id", async (req, res) => {
     let clientUtama;
-    try {
-        const transactionID = req.params.id;
-        const { status } = req.body;
 
+    const transactionID = req.params.id;
+    const { status } = req.body;
+
+    if (!status) {
+        return res.status(400).json({
+            message: "Update transaction - Missing required fields",
+        });
+    }
+
+    try {
         clientUtama = await dbutama.connect();
         const query = `
             UPDATE transaction SET status = $1 WHERE id = $2
