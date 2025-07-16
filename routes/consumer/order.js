@@ -5,9 +5,9 @@ const db = require('../../config/db');
 
 router.get("/all", async (req, res) => {
     let client;
-    try {
-        const consumerID = req.user.id;
+    const consumerID = req.user.id;
 
+    try {
         client = await db.connect();
         const query = `
             SELECT
@@ -57,11 +57,18 @@ router.get("/all", async (req, res) => {
 
 router.post('/create', async (req, res) => {
     let client;
+
+    const consumerID = req.user.id;
+    const { date, notes, status, kurir, alamat, invoice_url, latitude, longitude } = req.body;
+
+    if (!date || !notes || !status || !kurir || !alamat || !invoice_url || !latitude || !longitude) {
+        return res.status(400).json({
+            message: "Create Order - Missing required fields",
+        });
+    }
+
     try {
         client = await db.connect();
-
-        const consumerID = req.user.id;
-        const { date, notes, status, kurir, alamat, invoice_url, latitude, longitude } = req.body;
 
         const query = `
         INSERT INTO ordering (id_consumer, date, notes, status, kurir, alamat, invoice_url, latitude, longitude)
@@ -91,20 +98,32 @@ router.post('/create', async (req, res) => {
 
 router.post('/create/detail', async (req, res) => {
     let client;
-    try {
-        const consumerID = req.user.id;
-        const orderingID = req.body.idOrdering;
 
+    const consumerID = req.user.id;
+    const orderingID = req.body.idOrdering;
+
+    if (!orderingID) {
+        return res.status(400).json({
+            message: "Create Order Detail - Missing ordering ID",
+        });
+    }
+
+    try {
         client = await db.connect();
 
         const queryCheckOrdering = `
             SELECT id FROM ordering
             WHERE id = $1 AND status = 'PENDING'`;
         const resultCheckOrdering = await client.query(queryCheckOrdering, [orderingID]);
+        if (resultCheckOrdering.rowCount === 0) {
+            return res.status(404).json({
+                message: "No pending order with this ID found",
+            });
+        }
 
         const queryGetCart = `
-            SELECT * FROM cart 
-            WHERE id_consumer = $1`;
+            SELECT id_fish, weight
+            FROM cart WHERE id_consumer = $1`;
         const resultGetCart = await client.query(queryGetCart, [consumerID]);
         if (resultGetCart.rows.length === 0) {
             return res.status(404).json({
@@ -112,46 +131,40 @@ router.post('/create/detail', async (req, res) => {
             });
         }
 
-        if (resultCheckOrdering.rowCount === 0) {
-            return res.status(404).json({
-                message: "No pending order with this ID found",
-            });
-        } else {
-            // mulai transaksi
-            await client.query('BEGIN');
+        // mulai transaksi
+        await client.query('BEGIN');
 
-            const cartItems = resultGetCart.rows;
+        const cartItems = resultGetCart.rows;
 
-            const queryInsertDetailOrdering = `
-                INSERT INTO detail_ordering (id_consumer, id_ordering, id_fish, weight)
+        const queryInsertDetailOrdering = `
+            INSERT INTO detail_ordering (id_consumer, id_ordering, id_fish, weight)
                 VALUES ($1, $2, $3, $4)`;
 
-            for (const item of cartItems) {
-                await client.query(queryInsertDetailOrdering, [consumerID, orderingID, item.id_fish, item.weight]);
-            }
-            // Menghapus item dari keranjang setelah order dibuat
-            const queryClearCart = `DELETE FROM cart WHERE id_consumer = $1`;
-            await client.query(queryClearCart, [consumerID]);
+        for (const item of cartItems) {
+            await client.query(queryInsertDetailOrdering, [consumerID, orderingID, item.id_fish, item.weight]);
+        }
+        // Menghapus item dari keranjang setelah order dibuat
+        const queryClearCart = `DELETE FROM cart WHERE id_consumer = $1`;
+        await client.query(queryClearCart, [consumerID]);
 
-            // Mengurangi weight dari fish yang dipesan
-            const queryUpdateFishWeight = `
+        // Mengurangi weight dari fish yang dipesan
+        const queryUpdateFishWeight = `
             UPDATE weight
                 SET weight = weight - $1
                 FROM fish
                 WHERE weight.id = fish.id_weight AND fish.id = $2`;
 
-            for (const item of cartItems) {
-                await client.query(queryUpdateFishWeight, [item.weight, item.id_fish]);
-            }
-
-            // commit alias menyimpan perubahan ke database
-            await client.query('COMMIT');
-
-            return res.status(201).json({
-                id_ordering: orderingID,
-                message: "Order details created successfully",
-            });
+        for (const item of cartItems) {
+            await client.query(queryUpdateFishWeight, [item.weight, item.id_fish]);
         }
+
+        // commit alias menyimpan perubahan ke database
+        await client.query('COMMIT');
+
+        return res.status(201).json({
+            id_ordering: orderingID,
+            message: "Order details created successfully",
+        });
     } catch (err) {
         // rollback alias membatalkan transaksi jika ada error
         if (client) {

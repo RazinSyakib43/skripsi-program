@@ -9,16 +9,17 @@ const { checkPassword } = require("../../utils/encrypt");
 // login
 router.post("/login", async (req, res) => {
     let client;
+
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({
+            message: "Email and password are required",
+        });
+    }
+
     try {
         client = await db.connect();
-
-        const { email, password } = req.body;
-
-        if (!email || !password) {
-            return res.status(400).json({
-                message: "Email and password are required",
-            });
-        }
 
         const query = await client.query(
             `SELECT * FROM consumer WHERE email = $1`,

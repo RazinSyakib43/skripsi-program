@@ -3,12 +3,14 @@ const router = express.Router();
 
 const db = require('../../config/db');
 
-router.get("/", async (req, res) =>  {
+router.get("/", async (req, res) => {
     let client;
+
+    const consumerID = req.user.id;
+
     try {
         client = await db.connect();
 
-        const consumerID = req.user.id;
         const query = `
             SELECT 
                 c.id AS id_cart, 
@@ -50,10 +52,17 @@ router.get("/", async (req, res) =>  {
 
 router.post("/add", async (req, res) => {
     let client;
-    try {
-        const { id_fish, notes, weight } = req.body;
-        const consumerID = req.user.id;
 
+    const { id_fish, notes, weight } = req.body;
+    const consumerID = req.user.id;
+
+    if (!id_fish || !notes || !weight) {
+        return res.status(400).json({
+            message: "Add Cart - Missing required fields",
+        });
+    }
+
+    try {
         client = await db.connect();
 
         // Check jika item sudah ada di keranjangs
@@ -63,6 +72,12 @@ router.post("/add", async (req, res) => {
             WHERE id_fish = $1 AND id_consumer = $2
         `;
         const checkResult = await client.query(checkQuery, [id_fish, consumerID]);
+
+        if (checkResult.rows.length === 0) {
+            return res.status(404).json({
+                message: "Item not found in cart",
+            });
+        }
 
         if (checkResult.rows.length > 0) {
             // Update notes dan weight jika item keranjang sudah ada sebelumnya
@@ -75,17 +90,17 @@ router.post("/add", async (req, res) => {
             return res.status(200).json({
                 message: "Cart updated successfully",
             });
-        } else {
-            // Insert item baru ke keranjang jika belum ada
-            const insertQuery = `
+        }
+
+        // Insert item baru ke keranjang jika belum ada
+        const insertQuery = `
                 INSERT INTO cart (notes, weight, id_fish, id_consumer) 
                 VALUES ($1, $2, $3, $4)
             `;
-            await client.query(insertQuery, [notes, weight, id_fish, consumerID]);
-            return res.status(201).json({
-                message: "Item added to cart successfully",
-            });
-        }
+        await client.query(insertQuery, [notes, weight, id_fish, consumerID]);
+        return res.status(201).json({
+            message: "Item added to cart successfully",
+        });
     } catch (err) {
         // console.error("Error adding to cart:", err);
         return res.status(500).json({

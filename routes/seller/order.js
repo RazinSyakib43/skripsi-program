@@ -5,9 +5,9 @@ const db = require('../../config/db');
 
 router.get("/all", async (req, res) => {
     let client;
-    try {        
-        const sellerID = req.user.id;
+    const sellerID = req.user.id;
 
+    try {        
         client = await db.connect();
         const query = `
             SELECT
