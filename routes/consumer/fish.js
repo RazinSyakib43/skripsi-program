@@ -90,6 +90,13 @@ router.get("/all-cachehit", async (req, res) => {
 router.get("/cari/", async (req, res) => {
     let client;
     const fishName = req.query.namaIkan;
+
+    if (!fishName) {
+        return res.status(400).json({
+            message: "Search Fish - Missing fish name",
+        });
+    }
+
     try {
         // cek di redis ada gak
         const searchDataRedis = await redis.get(`fish:search:${fishName}`);
@@ -147,6 +154,13 @@ router.get("/cari/", async (req, res) => {
 // search fish by name (cache hit)
 router.get("/cari-cachehit/", async (req, res) => {
     const fishName = req.query.namaIkan;
+
+    if (!fishName) {
+        return res.status(400).json({
+            message: "Search Fish (cache hit) - Missing fish name",
+        });
+    }
+
     try {
         // cek di redis ada gak
         const searchDataRedis = await redis.get(`fish:search:${fishName}`);
@@ -175,6 +189,13 @@ router.get("/cari-cachehit/", async (req, res) => {
 router.get("/detail/:id", async (req, res) => {
     let client;
     const fishId = req.params.id;
+
+    if (!fishId) {
+        return res.status(400).json({
+            message: "Detail Fish - Missing fish ID",
+        });
+    }
+
     try {
         // cek di redis ada gak
         let fishDetailCache = await redis.get(`fish:detail:${fishId}`);
@@ -242,6 +263,13 @@ router.get("/detail/:id", async (req, res) => {
 // get detail fish (cache hit)
 router.get("/detail-cachehit/:id", async (req, res) => {
     const fishId = req.params.id;
+
+    if (!fishId) {
+        return res.status(400).json({
+            message: "Detail Fish (cache hit) - Missing fish ID",
+        });
+    }
+
     try {
         // cek di redis ada gak
         let fishDetailCache = await redis.get(`fish:detail:${fishId}`);

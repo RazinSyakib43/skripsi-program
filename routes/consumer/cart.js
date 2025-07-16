@@ -6,9 +6,10 @@ const redis = require('../../config/redis');
 
 router.get("/", async (req, res) => {
     let client;
-    try {
-        const consumerID = req.user.id;
 
+    const consumerID = req.user.id;
+
+    try {
         const cartAllCache = await redis.get(`cart:all:${consumerID}`);
 
         if (cartAllCache) {
@@ -65,9 +66,9 @@ router.get("/", async (req, res) => {
 });
 
 router.get("/cachehit", async (req, res) => {
-    try {
-        const consumerID = req.user.id;
+    const consumerID = req.user.id;
 
+    try {
         const cartAllCache = await redis.get(`cart:all:${consumerID}`);
 
         if (!cartAllCache) {
@@ -92,10 +93,17 @@ router.get("/cachehit", async (req, res) => {
 
 router.post("/add", async (req, res) => {
     let client;
-    try {
-        const { id_fish, notes, weight } = req.body;
-        const consumerID = req.user.id;
 
+    const { id_fish, notes, weight } = req.body;
+    const consumerID = req.user.id;
+
+    if (!id_fish || !notes || !weight) {
+        return res.status(400).json({
+            message: "Add Cart - Missing required fields",
+        });
+    }
+
+    try {
         client = await db.connect();
 
         // Check jika item sudah ada di keranjangs

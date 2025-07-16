@@ -7,9 +7,9 @@ const redis = require('../../config/redis');
 // get all orders (cache-aside)
 router.get("/all", async (req, res) => {
     let client;
-    try {
-        const sellerID = req.user.id;
+    const sellerID = req.user.id;
 
+    try {
         // // Cek di Redis apakah ada cache untuk pesanan masuk dari consumer
         const ordersAllCache = await redis.get(`orders:all:${sellerID}`);
 
@@ -76,9 +76,9 @@ router.get("/all", async (req, res) => {
 
 // get all orders (cache hit)
 router.get("/all-cachehit", async (req, res) => {
-    try {
-        const sellerID = req.user.id;
+    const sellerID = req.user.id;
 
+    try {
         // // Cek di Redis apakah ada cache untuk pesanan masuk dari consumer
         const ordersAllCache = await redis.get(`orders:all:${sellerID}`);
 

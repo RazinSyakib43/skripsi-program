@@ -7,8 +7,9 @@ const redis = require('../../config/redis');
 // get all orders (cache-aside)
 router.get("/all", async (req, res) => {
     let client;
+    const consumerID = req.user.id;
+
     try {
-        const consumerID = req.user.id;
         // Cek di Redis apakah ada cache untuk transaksi
         const transactionsCache = await redis.get(`transactions:all:${consumerID}`);
 
@@ -72,8 +73,9 @@ router.get("/all", async (req, res) => {
 
 // get all orders (cache hit)
 router.get("/all-cachehit", async (req, res) => {
+    const consumerID = req.user.id;
+
     try {
-        const consumerID = req.user.id;
         // Cek di Redis apakah ada cache untuk transaksi
         const transactionsCache = await redis.get(`transactions:all:${consumerID}`);
 
@@ -98,15 +100,23 @@ router.get("/all-cachehit", async (req, res) => {
 });
 
 router.post("/create", async (req, res) => {
-    try {
-        const consumerID = req.user.id;
-        const { id_external, idOrdering, created, paid_at, status } = req.body;
+    let client;
 
+    const consumerID = req.user.id;
+    const { id_external, idOrdering, created, paid_at, status } = req.body;
+
+    if (!id_external || !idOrdering || !created || !paid_at || !status) {
+        return res.status(400).json({
+            message: "Create transaction - Missing required fields",
+        });
+    }
+
+    try {
         client = await db.connect();
         const query = `
         INSERT INTO transaction (id_external, id_consumer, dates_transaction, dates_payed, id_ordering, status)
-        VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING id AS transaction_id`;
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING id AS transaction_id`;
 
         const values = [id_external, consumerID, created, paid_at, idOrdering, status];
         const result = await client.query(query, values);
@@ -137,10 +147,18 @@ router.post("/create", async (req, res) => {
 });
 
 router.put("/update/:id", async (req, res) => {
-    try {
-        const transactionID = req.params.id;
-        const { status } = req.body;
+    let client;
 
+    const transactionID = req.params.id;
+    const { status } = req.body;
+
+    if (!status) {
+        return res.status(400).json({
+            message: "Update transaction - Missing required fields",
+        });
+    }
+
+    try {
         client = await db.connect();
         const query = `
             UPDATE transaction SET status = $1 WHERE id = $2

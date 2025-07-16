@@ -7,9 +7,9 @@ const redis = require('../../config/redis');
 // get all orders (cache-aside)
 router.get("/all", async (req, res) => {
     let client;
-    try {
-        const consumerID = req.user.id;
+    const consumerID = req.user.id;
 
+    try {
         // Cek di Redis apakah ada cache untuk pesanan
         const ordersAllCache = await redis.get(`orders:all:${consumerID}`);
 
@@ -73,9 +73,9 @@ router.get("/all", async (req, res) => {
 
 // get all orders (cache hit)
 router.get("/all-cachehit", async (req, res) => {
-    try {
-        const consumerID = req.user.id;
+    const consumerID = req.user.id;
 
+    try {
         // Cek di Redis apakah ada cache untuk pesanan
         const ordersAllCache = await redis.get(`orders:all:${consumerID}`);
 
@@ -102,11 +102,17 @@ router.get("/all-cachehit", async (req, res) => {
 
 router.post('/create', async (req, res) => {
     let client;
+    const consumerID = req.user.id;
+    const { date, notes, status, kurir, alamat, invoice_url, latitude, longitude } = req.body;
+
+    if (!date || !notes || !status || !kurir || !alamat || !invoice_url || !latitude || !longitude) {
+        return res.status(400).json({
+            message: "Create Order - Missing required fields",
+        });
+    }
+
     try {
         client = await db.connect();
-
-        const consumerID = req.user.id;
-        const { date, notes, status, kurir, alamat, invoice_url, latitude, longitude } = req.body;
 
         const query = `
         INSERT INTO ordering (id_consumer, date, notes, status, kurir, alamat, invoice_url, latitude, longitude)
@@ -136,10 +142,17 @@ router.post('/create', async (req, res) => {
 
 router.post('/create/detail', async (req, res) => {
     let client;
-    try {        
-        const consumerID = req.user.id;
-        const orderingID = req.body.idOrdering;
 
+    const consumerID = req.user.id;
+    const orderingID = req.body.idOrdering;
+
+    if (!orderingID) {
+        return res.status(400).json({
+            message: "Create Order Detail - Missing ordering ID",
+        });
+    }
+
+    try {
         client = await db.connect();
 
         const queryCheckOrdering = `
@@ -148,8 +161,8 @@ router.post('/create/detail', async (req, res) => {
         const resultCheckOrdering = await client.query(queryCheckOrdering, [orderingID]);
 
         const queryGetCart = `
-            SELECT * FROM cart 
-            WHERE id_consumer = $1`;
+            SELECT id_fish, weight
+            FROM cart WHERE id_consumer = $1`;
         const resultGetCart = await client.query(queryGetCart, [consumerID]);
         if (resultGetCart.rows.length === 0) {
             return res.status(404).json({
