@@ -73,12 +73,6 @@ router.post("/add", async (req, res) => {
         `;
         const checkResult = await client.query(checkQuery, [id_fish, consumerID]);
 
-        if (checkResult.rows.length === 0) {
-            return res.status(404).json({
-                message: "Item not found in cart",
-            });
-        }
-
         if (checkResult.rows.length > 0) {
             // Update notes dan weight jika item keranjang sudah ada sebelumnya
             const updateQuery = `
