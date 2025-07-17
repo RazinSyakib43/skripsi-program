@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const dbreplica = require('../../config/dbreplica');
+const dbreplica = require('../config/dbreplica');
 
 const SECRET_KEY = '77719d1f20ad7752933c6c00c1d18218b3fa3257612378920e93ae1b336ed51e';
 
