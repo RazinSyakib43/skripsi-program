@@ -9,17 +9,16 @@ router.get("/all", async (req, res) => {
 
     try {
         client = await db.connect();
-        const query = `SELECT o.id AS id_ordering, o.date, o.status AS delivery_status, JSON_AGG(JSONB_BUILD_OBJECT( 'id_fish', f.id, 'name', f.name, 'price', f.price, 'weight', dor.weight, 'total_price', dor.weight * f.price, 'seller_name', s.name, 'location', s.location)) AS fishes FROM ordering o INNER JOIN detail_ordering dor ON o.id = dor.id_ordering INNER JOIN fish f ON dor.id_fish = f.id INNER JOIN seller s ON f.id_seller = s.id WHERE dor.id_consumer = $1 GROUP BY o.id, o.date, o.status;`;
+        const querySelect = await client.query(`SELECT o.id AS id_ordering, o.date, o.status AS delivery_status, JSON_AGG(JSONB_BUILD_OBJECT( 'id_fish', f.id, 'name', f.name, 'price', f.price, 'weight', dor.weight, 'total_price', dor.weight * f.price, 'seller_name', s.name, 'location', s.location)) AS fishes FROM ordering o INNER JOIN detail_ordering dor ON o.id = dor.id_ordering INNER JOIN fish f ON dor.id_fish = f.id INNER JOIN seller s ON f.id_seller = s.id WHERE dor.id_consumer = $1 GROUP BY o.id, o.date, o.status;`, [consumerID]);
 
-        const result = await client.query(query, [consumerID]);
-        if (result.rows.length === 0) {
+        if (querySelect.rows.length === 0) {
             return res.status(404).json({
                 message: "No orders consumer found",
             });
         }
         return res.status(200).json({
             message: "Success - All orders consumer (PostgreSQL)",
-            data: result.rows,
+            data: querySelect.rows,
         });
     } catch (err) {
         // console.error("Error fetching orders:", err);
@@ -49,14 +48,10 @@ router.post('/create', async (req, res) => {
     try {
         client = await db.connect();
 
-        const query = `INSERT INTO ordering (id_consumer, date, notes, status, kurir, alamat, invoice_url, latitude, longitude) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id AS id_ordering`;
-
-        const result = await client.query(query, [
-            consumerID, date, notes, status, kurir, alamat, invoice_url, latitude, longitude
-        ]);
+        const queryInsert = await client.query(`INSERT INTO ordering (id_consumer, date, notes, status, kurir, alamat, invoice_url, latitude, longitude) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id AS id_ordering`, [consumerID, date, notes, status, kurir, alamat, invoice_url, latitude, longitude]);
 
         return res.status(201).json({
-            id_ordering: result.rows[0].id_ordering,
+            id_ordering: queryInsert.rows[0].id_ordering,
             message: "Order created successfully",
         });
     } catch (err) {
@@ -87,17 +82,17 @@ router.post('/create/detail', async (req, res) => {
     try {
         client = await db.connect();
 
-        const queryCheckOrdering = `SELECT id FROM ordering WHERE id = $1 AND status = 'PENDING'`;
-        const resultCheckOrdering = await client.query(queryCheckOrdering, [orderingID]);
-        if (resultCheckOrdering.rowCount === 0) {
+        const queryCheckOrdering = await client.query(`SELECT id FROM ordering WHERE id = $1 AND status = 'PENDING'`, [orderingID]);
+
+        if (queryCheckOrdering.rowCount === 0) {
             return res.status(404).json({
                 message: "No pending order with this ID found",
             });
         }
 
-        const queryGetCart = `SELECT id_fish, weight FROM cart WHERE id_consumer = $1`;
-        const resultGetCart = await client.query(queryGetCart, [consumerID]);
-        if (resultGetCart.rows.length === 0) {
+        const queryGetCart = await client.query(`SELECT id_fish, weight FROM cart WHERE id_consumer = $1`, [consumerID]);
+
+        if (queryGetCart.rows.length === 0) {
             return res.status(404).json({
                 message: "Cart is empty",
             });
@@ -106,22 +101,18 @@ router.post('/create/detail', async (req, res) => {
         // mulai transaksi
         await client.query('BEGIN');
 
-        const cartItems = resultGetCart.rows;
-
-        const queryInsertDetailOrdering = `INSERT INTO detail_ordering (id_consumer, id_ordering, id_fish, weight) VALUES ($1, $2, $3, $4)`;
+        const cartItems = queryGetCart.rows;
 
         for (const item of cartItems) {
-            await client.query(queryInsertDetailOrdering, [consumerID, orderingID, item.id_fish, item.weight]);
+            await client.query(`INSERT INTO detail_ordering (id_consumer, id_ordering, id_fish, weight) VALUES ($1, $2, $3, $4)`, [consumerID, orderingID, item.id_fish, item.weight]);
         }
+
         // Menghapus item dari keranjang setelah order dibuat
-        const queryClearCart = `DELETE FROM cart WHERE id_consumer = $1`;
-        await client.query(queryClearCart, [consumerID]);
+        await client.query(`DELETE FROM cart WHERE id_consumer = $1`, [consumerID]);
 
         // Mengurangi weight dari fish yang dipesan
-        const queryUpdateFishWeight = `UPDATE weight SET weight = weight - $1 FROM fish WHERE weight.id = fish.id_weight AND fish.id = $2`;
-
         for (const item of cartItems) {
-            await client.query(queryUpdateFishWeight, [item.weight, item.id_fish]);
+            await client.query(`UPDATE weight SET weight = weight - $1 FROM fish WHERE weight.id = fish.id_weight AND fish.id = $2`, [item.weight, item.id_fish]);
         }
 
         // commit alias menyimpan perubahan ke database
