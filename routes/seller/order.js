@@ -7,7 +7,7 @@ router.get("/all", async (req, res) => {
     let client;
     const sellerID = req.user.id;
 
-    try {        
+    try {
         client = await db.connect();
 
         const querySelect = await client.query(`SELECT o.id AS id_ordering, o.date, c.name AS consumer_name, c.address AS consumer_address, o.status AS delivery_status, sum(dor.weight * f.price) AS total_price, t.status AS transaction_status, JSON_AGG(JSONB_BUILD_OBJECT('id_fish', f.id, 'name', f.name, 'price', f.price, 'weight', dor.weight, 'total_price', dor.weight * f.price)) AS fishes FROM ordering o INNER JOIN detail_ordering dor ON o.id = dor.id_ordering INNER JOIN fish f ON dor.id_fish = f.id INNER JOIN consumer c ON dor.id_consumer = c.id INNER JOIN transaction t ON t.id_ordering = o.id WHERE f.id_seller = $1 AND t.status = 'PAID' GROUP BY o.id, o.date, c.name, c.address, o.status, t.status`, [sellerID]);
