@@ -11,7 +11,7 @@ router.get("/all", async (req, res) => {
 
     try {
         // Cek di Redis apakah ada cache untuk pesanan
-        const ordersAllCache = await redis.get(`orders:all:${consumerID}`);
+        const ordersAllCache = await redis.get(`orders:consumer:all:${consumerID}`);
 
         if (ordersAllCache) {
             return res.status(200).json({
@@ -51,7 +51,7 @@ router.get("/all", async (req, res) => {
             }
 
             // Simpan hasil query ke Redis dengan tipe data string
-            await redis.set(`orders:all:${consumerID}`, JSON.stringify(result.rows));
+            await redis.set(`orders:consumer:all:${consumerID}`, JSON.stringify(result.rows));
 
             return res.status(200).json({
                 message: "Success - All orders consumer (PostgreSQL)",
@@ -77,7 +77,7 @@ router.get("/all-cachehit", async (req, res) => {
 
     try {
         // Cek di Redis apakah ada cache untuk pesanan
-        const ordersAllCache = await redis.get(`orders:all:${consumerID}`);
+        const ordersAllCache = await redis.get(`orders:consumer:all:${consumerID}`);
 
         if (!ordersAllCache) {
             return res.status(404).json({
@@ -206,7 +206,7 @@ router.post('/create/detail', async (req, res) => {
             await client.query('COMMIT');
 
             // Hapus cache Redis untuk semua order
-            await redis.del(`orders:all:${consumerID}`);
+            await redis.del(`orders:consumer:all:${consumerID}`);
 
             // Hapus cache Redis untuk keranjang
             await redis.del(`cart:all:${consumerID}`);

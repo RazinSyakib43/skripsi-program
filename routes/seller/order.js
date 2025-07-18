@@ -11,7 +11,7 @@ router.get("/all", async (req, res) => {
 
     try {
         // // Cek di Redis apakah ada cache untuk pesanan masuk dari consumer
-        const ordersAllCache = await redis.get(`orders:all:${sellerID}`);
+        const ordersAllCache = await redis.get(`orders:seller:all:${sellerID}`);
 
         if (ordersAllCache) {
             return res.status(200).json({
@@ -54,7 +54,7 @@ router.get("/all", async (req, res) => {
             }
 
             // Simpan hasil query ke Redis
-            await redis.set(`orders:all:${sellerID}`, JSON.stringify(result.rows));
+            await redis.set(`orders:seller:all:${sellerID}`, JSON.stringify(result.rows));
 
             return res.status(200).json({
                 message: "Success - All orders seller (PostgreSQL)",
@@ -80,7 +80,7 @@ router.get("/all-cachehit", async (req, res) => {
 
     try {
         // // Cek di Redis apakah ada cache untuk pesanan masuk dari consumer
-        const ordersAllCache = await redis.get(`orders:all:${sellerID}`);
+        const ordersAllCache = await redis.get(`orders:seller:all:${sellerID}`);
 
         if (!ordersAllCache) {
             return res.status(404).json({
