@@ -23,7 +23,7 @@ router.get("/all", async (req, res) => {
     } catch (err) {
         // console.error("Error fetching orders:", err);
         return res.status(500).json({
-            message: "Internal Server Error",
+            message: "Get All Orders (Consumer) - Internal Server Error",
             error: err.message,
         });
     } finally {
@@ -80,7 +80,7 @@ router.post('/create', async (req, res) => {
     } catch (err) {
         // console.error("Error creating order:", err);
         return res.status(500).json({
-            message: "Internal Server Error",
+            message: "Create Order - Internal Server Error",
             error: err.message,
         });
     } finally {
@@ -149,7 +149,7 @@ router.post('/create/detail', async (req, res) => {
         }
         // console.error("Error creating order details:", err);
         return res.status(500).json({
-            message: "Internal Server Error",
+            message: "Create Order Detail - Internal Server Error",
             error: err.message,
         });
     } finally {

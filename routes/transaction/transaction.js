@@ -23,7 +23,7 @@ router.get("/all", async (req, res) => {
     } catch (err) {
         // console.error("Error fetching transactions:", err);
         return res.status(500).json({
-            message: "Internal Server Error",
+            message: "Get All Transactions - Internal Server Error",
             error: err.message,
         });
     } finally {
@@ -84,7 +84,7 @@ router.post("/create", async (req, res) => {
     } catch (err) {
         // console.error("Error creating transaction:", err);
         return res.status(500).json({
-            message: "Internal Server Error",
+            message: "Create Transaction - Internal Server Error",
             error: err.message,
         });
     } finally {
@@ -117,7 +117,7 @@ router.put("/update/:id", async (req, res) => {
     } catch (err) {
         // console.error("Error updating transaction:", err);
         return res.status(500).json({
-            message: "Internal Server Error",
+            message: "Update Transaction - Internal Server Error",
             error: err.message,
         });
     } finally {

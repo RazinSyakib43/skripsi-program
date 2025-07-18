@@ -46,7 +46,7 @@ router.post("/login", async (req, res) => {
     } catch (err) {
         // console.error(err);
         return res.status(500).json({
-            message: "Internal Server Error",
+            message: "Login Seller - Internal Server Error",
             error: err.message,
         });
     } finally {

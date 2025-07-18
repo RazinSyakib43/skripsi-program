@@ -22,7 +22,7 @@ router.get("/all", async (req, res) => {
     } catch (err) {
         // console.error("Error fetching all fish:", err);
         return res.status(500).json({
-            message: "Internal Server Error",
+            message: "Get All Fish - Internal Server Error",
             error: err.message,
         });
     } finally {
@@ -59,7 +59,7 @@ router.get("/cari/", async (req, res) => {
     } catch (err) {
         // console.error("Error searching for fish:", err);
         return res.status(500).json({
-            message: "Internal Server Error",
+            message: "Search Fish - Internal Server Error",
             error: err.message,
         });
     } finally {
@@ -96,7 +96,7 @@ router.get("/detail/:id", async (req, res) => {
     } catch (err) {
         // console.error("Error fetching fish details:", err);
         return res.status(500).json({
-            message: "Internal Server Error",
+            message: "Detail Fish - Internal Server Error",
             error: err.message,
         });
     } finally {

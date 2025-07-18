@@ -24,7 +24,7 @@ router.get("/", async (req, res) => {
     } catch (err) {
         // console.error("Error fetching cart:", err);
         return res.status(500).json({
-            message: "Internal Server Error",
+            message: "Get All Cart - Internal Server Error",
             error: err.message,
         });
     } finally {
@@ -92,7 +92,7 @@ router.post("/add", async (req, res) => {
     } catch (err) {
         // console.error("Error adding to cart:", err);
         return res.status(500).json({
-            message: "Internal Server Error",
+            message: "Add to Cart - Internal Server Error",
             error: err.message,
         });
     } finally {

@@ -23,7 +23,7 @@ router.get("/all", async (req, res) => {
     } catch (err) {
         // console.error("Error fetching orders:", err);
         return res.status(500).json({
-            message: "Internal Server Error",
+            message: "Get All Orders (Seller) - Internal Server Error",
             error: err.message,
         });
     } finally {

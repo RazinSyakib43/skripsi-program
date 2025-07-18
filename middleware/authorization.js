@@ -45,8 +45,8 @@ async function authorize(req, res, next) {
             // console.error("Database query error:", err);
             return res.status(500).send({
                 code: 500,
-                status: "Internal Server Error",
-                message: "Database query failed"
+                status: "Authorization - Internal Server Error",
+                message: err.message
             });
         }
 
