@@ -37,18 +37,40 @@ router.post("/create", async (req, res) => {
     let client;
 
     const consumerID = req.user.id;
-    const { id_external, idOrdering, created, paid_at, status } = req.body;
+    const { id_external, idOrdering } = req.body;
 
-    if (!id_external || !idOrdering || !created || !paid_at || !status) {
+    if (!id_external) {
         return res.status(400).json({
-            message: "Create transaction - Missing required fields",
+            message: "Create transaction - Missing id_external field",
+        });
+    }
+
+    if (!idOrdering) {
+        return res.status(400).json({
+            message: "Create transaction - Missing idOrdering field",
+        });
+    }
+
+    if (isNaN(idOrdering)) {
+        return res.status(400).json({
+            message: "Invalid idOrdering value. It should be a valid number.",
         });
     }
 
     try {
         client = await db.connect();
 
-        const queryInsert = await client.query(`INSERT INTO transaction (id_external, id_consumer, dates_transaction, dates_payed, id_ordering, status) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id AS transaction_id`, [id_external, consumerID, created, paid_at, idOrdering, status]);
+        const queryCheckOrdering = await client.query(`SELECT id FROM ordering WHERE id = $1 AND status = 'PENDING'`, [idOrdering]);
+
+        if (queryCheckOrdering.rowCount === 0) {
+            return res.status(404).json({
+                message: "No pending order with this ID found",
+            });
+        }
+
+        const created = new Date().toISOString();
+
+        const queryInsert = await client.query(`INSERT INTO transaction (id_external, id_consumer, dates_transaction, id_ordering) VALUES ($1, $2, $3, $4) RETURNING id AS transaction_id`, [id_external, consumerID, created, idOrdering]);
         if (queryInsert.rows.length === 0) {
             return res.status(500).json({
                 message: "Failed to create transaction",
@@ -76,18 +98,13 @@ router.put("/update/:id", async (req, res) => {
     let client;
 
     const transactionID = req.params.id;
-    const { status } = req.body;
-
-    if (!status) {
-        return res.status(400).json({
-            message: "Update transaction - Missing required fields",
-        });
-    }
 
     try {
         client = await db.connect();
 
-        const queryUpdate = await client.query(`UPDATE transaction SET status = $1 WHERE id = $2 RETURNING id_consumer`, [status, transactionID]);
+        const paid_at = new Date().toISOString();
+
+        const queryUpdate = await client.query(`UPDATE transaction SET status = $1, dates_payed = $2 WHERE id = $3`, ['PAID', paid_at, transactionID]);
         if (queryUpdate.rowCount === 0) {
             return res.status(404).json({
                 message: "Transaction not found",
