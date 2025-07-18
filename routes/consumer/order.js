@@ -37,18 +37,41 @@ router.post('/create', async (req, res) => {
     let client;
 
     const consumerID = req.user.id;
-    const { date, notes, status, kurir, alamat, invoice_url, latitude, longitude } = req.body;
+    const { notes, kurir, alamat, invoice_url, latitude, longitude } = req.body;
 
-    if (!date || !notes || !status || !kurir || !alamat || !invoice_url || !latitude || !longitude) {
+    if (!notes) {
         return res.status(400).json({
-            message: "Create Order - Missing required fields",
+            message: "Create Order - Missing notes field",
+        });
+    }
+
+    if (!kurir) {
+        return res.status(400).json({
+            message: "Create Order - Missing kurir field",
+        });
+    }
+
+    if (!alamat) {
+        return res.status(400).json({
+            message: "Create Order - Missing alamat field",
+        });
+    }
+
+    if (!latitude || !longitude) {
+        return res.status(400).json({
+            message: "Create Order - Missing latitude or longitude field",
         });
     }
 
     try {
         client = await db.connect();
 
-        const queryInsert = await client.query(`INSERT INTO ordering (id_consumer, date, notes, status, kurir, alamat, invoice_url, latitude, longitude) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id AS id_ordering`, [consumerID, date, notes, status, kurir, alamat, invoice_url, latitude, longitude]);
+        const queryInsert = await client.query(`INSERT INTO ordering (id_consumer, notes, kurir, alamat, invoice_url, latitude, longitude) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id AS id_ordering`, [consumerID, notes, kurir, alamat, invoice_url, latitude, longitude]);
+        if (queryInsert.rows.length === 0) {
+            return res.status(400).json({
+                message: "Failed to create order",
+            });
+        }
 
         return res.status(201).json({
             id_ordering: queryInsert.rows[0].id_ordering,
@@ -75,7 +98,7 @@ router.post('/create/detail', async (req, res) => {
 
     if (!orderingID) {
         return res.status(400).json({
-            message: "Create Order Detail - Missing ordering ID",
+            message: "Create Order Detail - Missing idOrdering field",
         });
     }
 
@@ -103,17 +126,14 @@ router.post('/create/detail', async (req, res) => {
 
         const cartItems = queryGetCart.rows;
 
+        // Menambahkan detail order baru dan mengurangi weight dari fish yang dipesan
         for (const item of cartItems) {
             await client.query(`INSERT INTO detail_ordering (id_consumer, id_ordering, id_fish, weight) VALUES ($1, $2, $3, $4)`, [consumerID, orderingID, item.id_fish, item.weight]);
+            await client.query(`UPDATE weight SET weight = weight - $1 FROM fish WHERE weight.id = fish.id_weight AND fish.id = $2`, [item.weight, item.id_fish]);
         }
 
         // Menghapus item dari keranjang setelah order dibuat
         await client.query(`DELETE FROM cart WHERE id_consumer = $1`, [consumerID]);
-
-        // Mengurangi weight dari fish yang dipesan
-        for (const item of cartItems) {
-            await client.query(`UPDATE weight SET weight = weight - $1 FROM fish WHERE weight.id = fish.id_weight AND fish.id = $2`, [item.weight, item.id_fish]);
-        }
 
         // commit alias menyimpan perubahan ke database
         await client.query('COMMIT');
