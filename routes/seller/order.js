@@ -1,16 +1,16 @@
 const express = require("express");
 const router = express.Router();
 
-const db = require('../../config/db');
+const dbreplica = require('../../config/dbreplica');
 
 router.get("/all", async (req, res) => {
-    let client;
+    let clientReplica;
     const sellerID = req.user.id;
 
     try {
-        client = await db.connect();
+        clientReplica = await dbreplica.connect();
 
-        const querySelect = await client.query(`SELECT o.id AS id_ordering, o.date, c.name AS consumer_name, c.address AS consumer_address, o.status AS delivery_status, sum(dor.weight * f.price) AS total_price, t.status AS transaction_status, JSON_AGG(JSONB_BUILD_OBJECT('id_fish', f.id, 'name', f.name, 'price', f.price, 'weight', dor.weight, 'total_price', dor.weight * f.price)) AS fishes FROM ordering o INNER JOIN detail_ordering dor ON o.id = dor.id_ordering INNER JOIN fish f ON dor.id_fish = f.id INNER JOIN consumer c ON dor.id_consumer = c.id INNER JOIN transaction t ON t.id_ordering = o.id WHERE f.id_seller = $1 AND t.status = 'PAID' GROUP BY o.id, o.date, c.name, c.address, o.status, t.status`, [sellerID]);
+        const querySelect = await clientReplica.query(`SELECT o.id AS id_ordering, o.date, c.name AS consumer_name, c.address AS consumer_address, o.status AS delivery_status, sum(dor.weight * f.price) AS total_price, t.status AS transaction_status, JSON_AGG(JSONB_BUILD_OBJECT('id_fish', f.id, 'name', f.name, 'price', f.price, 'weight', dor.weight, 'total_price', dor.weight * f.price)) AS fishes FROM ordering o INNER JOIN detail_ordering dor ON o.id = dor.id_ordering INNER JOIN fish f ON dor.id_fish = f.id INNER JOIN consumer c ON dor.id_consumer = c.id INNER JOIN transaction t ON t.id_ordering = o.id WHERE f.id_seller = $1 AND t.status = 'PAID' GROUP BY o.id, o.date, c.name, c.address, o.status, t.status`, [sellerID]);
         if (querySelect.rows.length === 0) {
             return res.status(404).json({
                 message: "No orders found",
@@ -27,8 +27,8 @@ router.get("/all", async (req, res) => {
             error: err.message,
         });
     } finally {
-        if (client) {
-            client.release();
+        if (clientReplica) {
+            clientReplica.release();
         }
     }
 });

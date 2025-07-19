@@ -1,14 +1,14 @@
 const express = require("express");
 const router = express.Router();
 
-const db = require('../../config/db');
+const dbreplica = require('../../config/dbreplica');
 
 router.get("/all", async (req, res) => {
-    let client;
+    let clientReplica;
     try {
-        client = await db.connect();
+        clientReplica = await dbreplica.connect();
 
-        const querySelect = await client.query(`SELECT f.id AS id_fish, f.name, f.price, s.location, f.photo_url FROM fish f JOIN seller s ON f.id_seller = s.id`);
+        const querySelect = await clientReplica.query(`SELECT f.id AS id_fish, f.name, f.price, s.location, f.photo_url FROM fish f JOIN seller s ON f.id_seller = s.id`);
 
         if (querySelect.rows.length === 0) {
             return res.status(404).json({
@@ -26,14 +26,14 @@ router.get("/all", async (req, res) => {
             error: err.message,
         });
     } finally {
-        if (client) {
-            client.release();
+        if (clientReplica) {
+            clientReplica.release();
         }
     }
 });
 
 router.get("/cari/", async (req, res) => {
-    let client;
+    let clientReplica;
     const fishName = req.query.namaIkan;
 
     if (!fishName) {
@@ -43,9 +43,9 @@ router.get("/cari/", async (req, res) => {
     }
 
     try {
-        client = await db.connect();
+        clientReplica = await dbreplica.connect();
 
-        const querySelect = await client.query(`SELECT f.id AS id_fish, f.name, f.price, s.location, f.photo_url FROM fish f JOIN seller s ON f.id_seller = s.id WHERE f.name ILIKE $1`, [`%${fishName}%`]);
+        const querySelect = await clientReplica.query(`SELECT f.id AS id_fish, f.name, f.price, s.location, f.photo_url FROM fish f JOIN seller s ON f.id_seller = s.id WHERE f.name ILIKE $1`, [`%${fishName}%`]);
 
         if (querySelect.rows.length === 0) {
             return res.status(404).json({
@@ -63,14 +63,14 @@ router.get("/cari/", async (req, res) => {
             error: err.message,
         });
     } finally {
-        if (client) {
-            client.release();
+        if (clientReplica) {
+            clientReplica.release();
         }
     }
 });
 
 router.get("/detail/:id", async (req, res) => {
-    let client;
+    let clientReplica;
     const fishId = req.params.id;
 
     if (!fishId) {
@@ -80,9 +80,9 @@ router.get("/detail/:id", async (req, res) => {
     }
 
     try {
-        client = await db.connect();
+        clientReplica = await dbreplica.connect();
 
-        const querySelect = await client.query(`SELECT f.id AS id_fish, f.name, f.description, f.price, s.location, s.name AS seller_name, f.photo_url, f.id_weight AS id_weight,w.weight FROM fish f JOIN seller s ON f.id_seller = s.id JOIN weight w ON f.id_weight = w.id WHERE f.id = $1`, [fishId]);
+        const querySelect = await clientReplica.query(`SELECT f.id AS id_fish, f.name, f.description, f.price, s.location, s.name AS seller_name, f.photo_url, f.id_weight AS id_weight,w.weight FROM fish f JOIN seller s ON f.id_seller = s.id JOIN weight w ON f.id_weight = w.id WHERE f.id = $1`, [fishId]);
 
         if (querySelect.rows.length === 0) {
             return res.status(404).json({
@@ -100,8 +100,8 @@ router.get("/detail/:id", async (req, res) => {
             error: err.message,
         });
     } finally {
-        if (client) {
-            client.release();
+        if (clientReplica) {
+            clientReplica.release();
         }
     }
 });

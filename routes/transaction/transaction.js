@@ -1,15 +1,16 @@
 const express = require("express");
 const router = express.Router();
 
-const db = require('../../config/db');
+const dbutama = require('../../config/dbutama');
+const dbreplica = require('../../config/dbreplica');
 
 router.get("/all", async (req, res) => {
-    let client;
+    let clientReplica;
     const consumerID = req.user.id;
 
     try {
-        client = await db.connect();
-        const querySelect = await client.query(`SELECT t.id AS id_transaction, t.status AS transaction_status, t.dates_transaction, t.dates_payed, o.id AS id_ordering, JSON_AGG(JSON_BUILD_OBJECT('id_fish', dor.id_fish, 'fish_name', f.name, 'fish_price', f.price, 'seller_name', s.name, 'subtotal_price', dor.weight * f.price)) AS fish_details FROM transaction t INNER JOIN ordering o ON t.id_ordering = o.id INNER JOIN detail_ordering dor ON o.id = dor.id_ordering INNER JOIN fish f ON dor.id_fish = f.id INNER JOIN seller s ON f.id_seller = s.id WHERE t.id_consumer = $1 GROUP BY t.id, t.status, t.dates_transaction, t.dates_payed, o.id`, [consumerID]);
+        clientReplica = await dbreplica.connect();
+        const querySelect = await clientReplica.query(`SELECT t.id AS id_transaction, t.status AS transaction_status, t.dates_transaction, t.dates_payed, o.id AS id_ordering, JSON_AGG(JSON_BUILD_OBJECT('id_fish', dor.id_fish, 'fish_name', f.name, 'fish_price', f.price, 'seller_name', s.name, 'subtotal_price', dor.weight * f.price)) AS fish_details FROM transaction t INNER JOIN ordering o ON t.id_ordering = o.id INNER JOIN detail_ordering dor ON o.id = dor.id_ordering INNER JOIN fish f ON dor.id_fish = f.id INNER JOIN seller s ON f.id_seller = s.id WHERE t.id_consumer = $1 GROUP BY t.id, t.status, t.dates_transaction, t.dates_payed, o.id`, [consumerID]);
 
         if (querySelect.rows.length === 0) {
             return res.status(404).json({
@@ -27,14 +28,15 @@ router.get("/all", async (req, res) => {
             error: err.message,
         });
     } finally {
-        if (client) {
-            client.release();
+        if (clientReplica) {
+            clientReplica.release();
         }
     }
 });
 
 router.post("/create", async (req, res) => {
-    let client;
+    let clientUtama;
+    let clientReplica;
 
     const consumerID = req.user.id;
     const { id_external, idOrdering } = req.body;
@@ -58,9 +60,9 @@ router.post("/create", async (req, res) => {
     }
 
     try {
-        client = await db.connect();
+        clientReplica = await dbreplica.connect();
 
-        const queryCheckOrdering = await client.query(`SELECT id FROM ordering WHERE id = $1 AND status = 'PENDING'`, [idOrdering]);
+        const queryCheckOrdering = await clientReplica.query(`SELECT id FROM ordering WHERE id = $1 AND status = 'PENDING'`, [idOrdering]);
 
         if (queryCheckOrdering.rowCount === 0) {
             return res.status(404).json({
@@ -70,7 +72,9 @@ router.post("/create", async (req, res) => {
 
         const created = new Date().toISOString();
 
-        const queryInsert = await client.query(`INSERT INTO transaction (id_external, id_consumer, dates_transaction, id_ordering) VALUES ($1, $2, $3, $4) RETURNING id AS transaction_id`, [id_external, consumerID, created, idOrdering]);
+        clientUtama = await dbutama.connect();
+
+        const queryInsert = await clientUtama.query(`INSERT INTO transaction (id_external, id_consumer, dates_transaction, id_ordering) VALUES ($1, $2, $3, $4) RETURNING id AS transaction_id`, [id_external, consumerID, created, idOrdering]);
         if (queryInsert.rows.length === 0) {
             return res.status(500).json({
                 message: "Failed to create transaction",
@@ -88,8 +92,11 @@ router.post("/create", async (req, res) => {
             error: err.message,
         });
     } finally {
-        if (client) {
-            client.release();
+        if (clientUtama) {
+            clientUtama.release();
+        }
+        if (clientReplica) {
+            clientReplica.release();
         }
     }
 });

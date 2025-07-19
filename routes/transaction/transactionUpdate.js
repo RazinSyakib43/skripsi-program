@@ -1,19 +1,19 @@
 const express = require("express");
 const router = express.Router();
 
-const db = require('../../config/db');
+const dbutama = require('../../config/dbutama');
 
 router.put("/:id", async (req, res) => {
-    let client;
+    let clientUtama;
 
     const transactionID = req.params.id;
 
     try {
-        client = await db.connect();
+        clientUtama = await dbutama.connect();
 
         const paid_at = new Date().toISOString();
 
-        const queryUpdate = await client.query(`UPDATE transaction SET status = $1, dates_payed = $2 WHERE id = $3`, ['PAID', paid_at, transactionID]);
+        const queryUpdate = await clientUtama.query(`UPDATE transaction SET status = $1, dates_payed = $2 WHERE id = $3`, ['PAID', paid_at, transactionID]);
         if (queryUpdate.rowCount === 0) {
             return res.status(404).json({
                 message: "Transaction not found",
@@ -30,8 +30,8 @@ router.put("/:id", async (req, res) => {
             error: err.message,
         });
     } finally {
-        if (client) {
-            client.release();
+        if (clientUtama) {
+            clientUtama.release();
         }
     }
 });
