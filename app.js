@@ -15,6 +15,7 @@ const orderSellerRouter = require("./routes/seller/order");
 
 // transaction
 const transactionRouter = require("./routes/transaction/transaction");
+const transactionUpdateRouter = require("./routes/transaction/transactionUpdate");
 
 const port = 80;
 
@@ -34,6 +35,7 @@ app.use("/consumer/order", authorization, orderConsumerRouter);
 
 // transaction routes
 app.use("/transaction", authorization, transactionRouter);
+app.use("/transactions/update", transactionUpdateRouter);
 
 // seller routes
 app.use("/seller/order", authorization, orderSellerRouter);

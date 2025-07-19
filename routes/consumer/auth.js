@@ -21,10 +21,7 @@ router.post("/login", async (req, res) => {
     try {
         client = await db.connect();
 
-        const query = await client.query(
-            `SELECT * FROM consumer WHERE email = $1`,
-            [email]
-        );
+        const query = await client.query(`SELECT * FROM consumer WHERE email = $1`, [email]);
         const selectedUser = query.rows[0];
         // console.log(selectedUser);
         if (!selectedUser) {
@@ -49,7 +46,7 @@ router.post("/login", async (req, res) => {
     } catch (err) {
         // console.error(err);
         return res.status(500).json({
-            message: "Internal Server Error",
+            message: "Login Consumer - Internal Server Error",
             error: err.message,
         });
     } finally {
