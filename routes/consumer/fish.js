@@ -49,6 +49,7 @@ router.get("/cari/", async (req, res) => {
 
         if (querySelect.rows.length === 0) {
             return res.status(404).json({
+                fishNameKeyword: fishName,
                 message: "Fish not found",
             });
         }
@@ -86,6 +87,7 @@ router.get("/detail/:id", async (req, res) => {
 
         if (querySelect.rows.length === 0) {
             return res.status(404).json({
+                fishId: fishId,
                 message: "Fish not found",
             });
         }

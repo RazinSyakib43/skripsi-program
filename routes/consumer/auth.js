@@ -26,6 +26,7 @@ router.post("/login", async (req, res) => {
         // console.log(selectedUser);
         if (!selectedUser) {
             return res.status(404).json({
+                email: email,
                 message: "User not found",
             });
         }
@@ -33,6 +34,7 @@ router.post("/login", async (req, res) => {
         const isPasswordMatch = await checkPassword(selectedUser.password, password);
         if (!isPasswordMatch) {
             return res.status(401).json({
+                password: password,
                 message: "Invalid password",
             });
         }

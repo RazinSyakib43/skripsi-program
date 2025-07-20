@@ -13,6 +13,7 @@ router.get("/all", async (req, res) => {
 
         if (querySelect.rows.length === 0) {
             return res.status(404).json({
+                consumerID: consumerID,
                 message: "No orders consumer found",
             });
         }
@@ -69,6 +70,12 @@ router.post('/create', async (req, res) => {
         const queryInsert = await client.query(`INSERT INTO ordering (id_consumer, notes, kurir, alamat, invoice_url, latitude, longitude) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id AS id_ordering`, [consumerID, notes, kurir, alamat, invoice_url, latitude, longitude]);
         if (queryInsert.rows.length === 0) {
             return res.status(400).json({
+                notes: notes,
+                kurir: kurir,
+                alamat: alamat,
+                latitude: latitude,
+                longitude: longitude,
+                consumerID: consumerID,
                 message: "Failed to create order",
             });
         }
@@ -109,6 +116,7 @@ router.post('/create/detail', async (req, res) => {
 
         if (queryCheckOrdering.rowCount === 0) {
             return res.status(404).json({
+                idOrdering: orderingID,
                 message: "No pending order with this ID found",
             });
         }
@@ -117,6 +125,7 @@ router.post('/create/detail', async (req, res) => {
 
         if (queryGetCart.rows.length === 0) {
             return res.status(404).json({
+                consumerID: consumerID,
                 message: "Cart is empty",
             });
         }

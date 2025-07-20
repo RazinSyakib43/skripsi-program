@@ -14,6 +14,7 @@ router.get("/", async (req, res) => {
         const querySelect = await client.query(`SELECT c.id AS id_cart, c.notes, c.weight, f.id AS id_fish, f.name, f.price, s.name AS seller_name,s.location, f.photo_url FROM cart c JOIN fish f ON c.id_fish = f.id JOIN seller s ON f.id_seller = s.id WHERE c.id_consumer = $1`, [consumerID]);
         if (querySelect.rows.length === 0) {
             return res.status(404).json({
+                consumerID: consumerID,
                 message: "Cart is empty",
             });
         }
@@ -82,6 +83,10 @@ router.post("/add", async (req, res) => {
             const queryInsert = await client.query(`INSERT INTO cart (notes, weight, id_fish, id_consumer) VALUES ($1, $2, $3, $4)`, [notes, weight, id_fish, consumerID]);
             if (queryInsert.rowCount === 0) {
                 return res.status(400).json({
+                    id_fish: id_fish,
+                    notes: notes,
+                    weight: weight,
+                    consumerID: consumerID,
                     message: "Failed to add item to cart",
                 });
             }
