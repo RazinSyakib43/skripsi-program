@@ -23,7 +23,7 @@ router.put("/:id", async (req, res) => {
         }
 
         // dapatkan id_consumer yang data transaksinya diupdate
-        const consumerID = result.rows[0].id_consumer;
+        const consumerID = queryUpdate.rows[0].id_consumer;
         // Hapus cache Redis untuk semua transaksi milik consumer id tersebut
         await redis.del(`transactions:all:${consumerID}`);
 

@@ -30,7 +30,8 @@ router.get("/", async (req, res) => {
                 });
             }
 
-            await redis.set(`cart:all:${consumerID}`, JSON.stringify(result.rows));
+            // Simpan hasil query ke Redis dengan tipe data string
+            await redis.set(`cart:all:${consumerID}`, JSON.stringify(querySelect.rows));
 
             return res.status(200).json({
                 message: "Success - All cart items (PostgreSQL)",

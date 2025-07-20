@@ -31,7 +31,7 @@ router.get("/all", async (req, res) => {
             }
 
             // Simpan hasil query ke Redis dengan tipe data string
-            await redis.set(`orders:consumer:all:${consumerID}`, JSON.stringify(result.rows));
+            await redis.set(`orders:consumer:all:${consumerID}`, JSON.stringify(querySelect.rows));
 
             return res.status(200).json({
                 message: "Success - All orders consumer (PostgreSQL)",
