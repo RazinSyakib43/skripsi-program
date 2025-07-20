@@ -192,6 +192,12 @@ router.post('/create/detail', async (req, res) => {
         // commit alias menyimpan perubahan ke database
         await client.query('COMMIT');
 
+        // Hapus cache Redis untuk semua order
+        await redis.del(`orders:consumer:all:${consumerID}`);
+
+        // Hapus cache Redis untuk keranjang
+        await redis.del(`cart:all:${consumerID}`);
+
         return res.status(201).json({
             id_ordering: orderingID,
             message: "Order details created successfully",

@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const db = require('../../config/db');
+const redis = require('../../config/redis');
 
 router.put("/:id", async (req, res) => {
     let client;
