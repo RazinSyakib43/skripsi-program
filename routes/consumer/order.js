@@ -2,25 +2,40 @@ const express = require("express");
 const router = express.Router();
 
 const db = require('../../config/db');
+const redis = require('../../config/redis');
 
 router.get("/all", async (req, res) => {
     let client;
     const consumerID = req.user.id;
 
     try {
-        client = await db.connect();
-        const querySelect = await client.query(`SELECT o.id AS id_ordering, o.date, o.status AS delivery_status, JSON_AGG(JSONB_BUILD_OBJECT( 'id_fish', f.id, 'name', f.name, 'price', f.price, 'weight', dor.weight, 'total_price', dor.weight * f.price, 'seller_name', s.name, 'location', s.location)) AS fishes FROM ordering o INNER JOIN detail_ordering dor ON o.id = dor.id_ordering INNER JOIN fish f ON dor.id_fish = f.id INNER JOIN seller s ON f.id_seller = s.id WHERE dor.id_consumer = $1 GROUP BY o.id, o.date, o.status;`, [consumerID]);
+        // Cek di Redis apakah ada cache untuk pesanan
+        const ordersAllCache = await redis.get(`orders:consumer:all:${consumerID}`);
 
-        if (querySelect.rows.length === 0) {
-            return res.status(404).json({
-                consumerID: consumerID,
-                message: "No orders consumer found",
+        if (ordersAllCache) {
+            return res.status(200).json({
+                message: "Success - All orders consumer (Redis Cache)",
+                data: JSON.parse(ordersAllCache),
+            });
+        } else {
+            client = await db.connect();
+            const querySelect = await client.query(`SELECT o.id AS id_ordering, o.date, o.status AS delivery_status, JSON_AGG(JSONB_BUILD_OBJECT( 'id_fish', f.id, 'name', f.name, 'price', f.price, 'weight', dor.weight, 'total_price', dor.weight * f.price, 'seller_name', s.name, 'location', s.location)) AS fishes FROM ordering o INNER JOIN detail_ordering dor ON o.id = dor.id_ordering INNER JOIN fish f ON dor.id_fish = f.id INNER JOIN seller s ON f.id_seller = s.id WHERE dor.id_consumer = $1 GROUP BY o.id, o.date, o.status;`, [consumerID]);
+
+            if (querySelect.rows.length === 0) {
+                return res.status(404).json({
+                    consumerID: consumerID,
+                    message: "No orders consumer found",
+                });
+            }
+
+            // Simpan hasil query ke Redis dengan tipe data string
+            await redis.set(`orders:consumer:all:${consumerID}`, JSON.stringify(result.rows));
+
+            return res.status(200).json({
+                message: "Success - All orders consumer (PostgreSQL)",
+                data: querySelect.rows,
             });
         }
-        return res.status(200).json({
-            message: "Success - All orders consumer (PostgreSQL)",
-            data: querySelect.rows,
-        });
     } catch (err) {
         // console.error("Error fetching orders:", err);
         return res.status(500).json({
@@ -31,6 +46,36 @@ router.get("/all", async (req, res) => {
         if (client) {
             client.release();
         }
+    }
+});
+
+// get all orders (cache hit)
+router.get("/all-cachehit", async (req, res) => {
+    const consumerID = req.user.id;
+
+    try {
+        // Cek di Redis apakah ada cache untuk pesanan
+        const ordersAllCache = await redis.get(`orders:consumer:all:${consumerID}`);
+
+        if (!ordersAllCache) {
+            return res.status(404).json({
+                consumerID: consumerID,
+                message: "No orders (consumer) cache found",
+            });
+        }
+
+        const JSONparse = JSON.parse(ordersAllCache);
+
+        return res.status(200).json({
+            message: "Success - All orders consumer 2 (Redis Cache)",
+            data: JSONparse,
+        });
+    } catch (err) {
+        // console.error("Error fetching orders:", err);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            error: err.message,
+        });
     }
 });
 

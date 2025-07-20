@@ -13,13 +13,18 @@ router.put("/:id", async (req, res) => {
 
         const paid_at = new Date().toISOString();
 
-        const queryUpdate = await client.query(`UPDATE transaction SET status = $1, dates_payed = $2 WHERE id = $3`, ['PAID', paid_at, transactionID]);
+        const queryUpdate = await client.query(`UPDATE transaction SET status = $1, dates_payed = $2 WHERE id = $3 RETURNING id_consumer`, ['PAID', paid_at, transactionID]);
         if (queryUpdate.rowCount === 0) {
             return res.status(404).json({
                 transactionID: transactionID,
                 message: "Transaction not found",
             });
         }
+
+        // dapatkan id_consumer yang data transaksinya diupdate
+        const consumerID = result.rows[0].id_consumer;
+        // Hapus cache Redis untuk semua transaksi milik consumer id tersebut
+        await redis.del(`transactions:all:${consumerID}`);
 
         return res.status(200).json({
             message: "Transaction updated successfully",

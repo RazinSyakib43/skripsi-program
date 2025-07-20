@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const db = require('../../config/db');
+const redis = require('../../config/redis');
 
 router.get("/", async (req, res) => {
     let client;
@@ -9,19 +10,33 @@ router.get("/", async (req, res) => {
     const consumerID = req.user.id;
 
     try {
-        client = await db.connect();
+        const cartAllCache = await redis.get(`cart:all:${consumerID}`);
 
-        const querySelect = await client.query(`SELECT c.id AS id_cart, c.notes, c.weight, f.id AS id_fish, f.name, f.price, s.name AS seller_name,s.location, f.photo_url FROM cart c JOIN fish f ON c.id_fish = f.id JOIN seller s ON f.id_seller = s.id WHERE c.id_consumer = $1`, [consumerID]);
-        if (querySelect.rows.length === 0) {
-            return res.status(404).json({
-                consumerID: consumerID,
-                message: "Cart is empty",
+        if (cartAllCache) {
+            const JSONparse = JSON.parse(cartAllCache);
+            return res.status(200).json({
+                message: "Success - All cart items (Redis Cache)",
+                data: JSONparse,
+            });
+        } else {
+            // baru konek ke postgres jika cache miss
+            client = await db.connect();
+
+            const querySelect = await client.query(`SELECT c.id AS id_cart, c.notes, c.weight, f.id AS id_fish, f.name, f.price, s.name AS seller_name,s.location, f.photo_url FROM cart c JOIN fish f ON c.id_fish = f.id JOIN seller s ON f.id_seller = s.id WHERE c.id_consumer = $1`, [consumerID]);
+            if (querySelect.rows.length === 0) {
+                return res.status(404).json({
+                    consumerID: consumerID,
+                    message: "Cart is empty",
+                });
+            }
+
+            await redis.set(`cart:all:${consumerID}`, JSON.stringify(result.rows));
+
+            return res.status(200).json({
+                message: "Success - All cart items (PostgreSQL)",
+                data: querySelect.rows,
             });
         }
-        return res.status(200).json({
-            message: "Success - All cart items (PostgreSQL)",
-            data: querySelect.rows,
-        });
     } catch (err) {
         // console.error("Error fetching cart:", err);
         return res.status(500).json({
@@ -32,6 +47,33 @@ router.get("/", async (req, res) => {
         if (client) {
             client.release();
         }
+    }
+});
+
+router.get("/cachehit", async (req, res) => {
+    const consumerID = req.user.id;
+
+    try {
+        const cartAllCache = await redis.get(`cart:all:${consumerID}`);
+
+        if (!cartAllCache) {
+            return res.status(404).json({
+                consumerID: consumerID,
+                message: "No cart cache found",
+            });
+        }
+
+        const JSONparse = JSON.parse(cartAllCache);
+        return res.status(200).json({
+            message: "Success - All cart items 2 (Redis Cache)",
+            data: JSONparse,
+        });
+    } catch (err) {
+        // console.error("Error fetching cart:", err);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            error: err.message,
+        });
     }
 });
 
@@ -74,6 +116,10 @@ router.post("/add", async (req, res) => {
                     message: "Cart item not found for update",
                 });
             }
+
+            // Hapus cache Redis untuk keranjang semua item
+            await redis.del(`cart:all:${consumerID}`);
+
             return res.status(200).json({
                 id_cart: checkQuery.rows[0].id,
                 message: "Cart updated successfully",
