@@ -14,7 +14,7 @@ async function authorize(req, res, next) {
             return res.status(401).send({
                 code: 401,
                 status: "Unauthorized",
-                message: "Authorization header missing or invalid format"
+                message: "Invalid or missing token. Please login first or register if you don't have an account"
             });
         }
 
