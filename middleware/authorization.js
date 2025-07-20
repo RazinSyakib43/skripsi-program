@@ -13,6 +13,7 @@ async function authorize(req, res, next) {
         } else {
             return res.status(401).send({
                 code: 401,
+                bearerToken: bearerToken,
                 status: "Unauthorized",
                 message: "Invalid or missing token. Please login first or register if you don't have an account"
             });
@@ -35,6 +36,7 @@ async function authorize(req, res, next) {
         if (rows.length === 0) {
             return res.status(401).send({
                 code: 401,
+                bearerToken: bearerToken,
                 status: "Unauthorized",
                 message: "User not found"
             });

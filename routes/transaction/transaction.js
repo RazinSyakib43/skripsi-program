@@ -13,6 +13,7 @@ router.get("/all", async (req, res) => {
 
         if (querySelect.rows.length === 0) {
             return res.status(404).json({
+                consumerID: consumerID,
                 message: "No transactions found",
             });
         }
@@ -64,6 +65,7 @@ router.post("/create", async (req, res) => {
 
         if (queryCheckOrdering.rowCount === 0) {
             return res.status(404).json({
+                idOrdering: idOrdering,
                 message: "No pending order with this ID found",
             });
         }
@@ -72,7 +74,10 @@ router.post("/create", async (req, res) => {
 
         const queryInsert = await client.query(`INSERT INTO transaction (id_external, id_consumer, dates_transaction, id_ordering) VALUES ($1, $2, $3, $4) RETURNING id AS transaction_id`, [id_external, consumerID, created, idOrdering]);
         if (queryInsert.rows.length === 0) {
-            return res.status(500).json({
+            return res.status(400).json({
+                id_external: id_external,
+                idOrdering: idOrdering,
+                consumerID: consumerID,
                 message: "Failed to create transaction",
             });
         }
