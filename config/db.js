@@ -6,7 +6,6 @@ const db = new Pool({
     password: "yessgood123",
     database: "startupxyz_db",
     port: 5432,
-    connectionTimeoutMillis: 5000, // Timeout after 5 seconds
 });
 
 module.exports = db;

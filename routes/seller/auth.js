@@ -6,13 +6,6 @@ const db = require('../../config/db');
 const { generateToken } = require("../../utils/token");
 const { checkPassword } = require("../../utils/encrypt");
 
-router.get("/test", (req, res) => {
-    res.status(200).json({
-        message: "Welcome to Seller API",
-        status: "success",
-    });
-});
-
 // login
 router.post("/login", async (req, res) => {
     let client;
@@ -28,14 +21,12 @@ router.post("/login", async (req, res) => {
     try {
         client = await db.connect();
 
-        const query = await client.query(
-            `SELECT * FROM seller WHERE email = $1`,
-            [email]
-        );
+        const query = await client.query(`SELECT * FROM seller WHERE email = $1`, [email]);
         const selectedUser = query.rows[0];
         // console.log(selectedUser);
         if (!selectedUser) {
             return res.status(404).json({
+                email: email,
                 message: "User not found",
             });
         }
@@ -43,6 +34,7 @@ router.post("/login", async (req, res) => {
         const isPasswordMatch = await checkPassword(selectedUser.password, password);
         if (!isPasswordMatch) {
             return res.status(401).json({
+                password: password,
                 message: "Invalid password",
             });
         }
@@ -56,7 +48,7 @@ router.post("/login", async (req, res) => {
     } catch (err) {
         // console.error(err);
         return res.status(500).json({
-            message: "Internal Server Error",
+            message: "Login Seller - Internal Server Error",
             error: err.message,
         });
     } finally {

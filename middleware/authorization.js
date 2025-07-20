@@ -13,8 +13,9 @@ async function authorize(req, res, next) {
         } else {
             return res.status(401).send({
                 code: 401,
+                bearerToken: bearerToken,
                 status: "Unauthorized",
-                message: "Authorization header missing or invalid format"
+                message: "Invalid or missing token. Please login first or register if you don't have an account"
             });
         }
 
@@ -24,48 +25,35 @@ async function authorize(req, res, next) {
         // console.log("tokenPayload", tokenPayload);
 
         client = await db.connect();
-        try {
-            const tableRole = [tokenPayload.role];
-            // console.log("tableRole", tableRole);
-            const queryText = `SELECT id FROM ${tableRole} WHERE id = $1`;
-            // console.log("queryText", queryText);
-            const { rows } = await client.query(queryText, [tokenPayload.id]);
-            // console.log("rows", rows);
-            if (rows.length === 0) {
-                return res.status(401).send({
-                    code: 401,
-                    status: "Unauthorized",
-                    message: "User not found"
-                });
-            }
-            req.user = {
-                id: rows[0].id
-            };
-        } catch (err) {
-            // console.error("Database query error:", err);
-            return res.status(500).send({
-                code: 500,
-                status: "Internal Server Error",
-                message: "Database query failed"
+
+        const tableRole = [tokenPayload.role];
+        // console.log("tableRole", tableRole);
+        const queryText = `SELECT id FROM ${tableRole} WHERE id = $1`;
+        // console.log("queryText", queryText);
+        const { rows } = await client.query(queryText, [tokenPayload.id]);
+        // console.log("rows", rows);
+
+        if (rows.length === 0) {
+            return res.status(401).send({
+                code: 401,
+                bearerToken: bearerToken,
+                status: "Unauthorized",
+                message: "User not found"
             });
         }
 
-        if (!req.user) {
-            return res.status(401).send({
-                code: 401,
-                status: "Unauthorized",
-                message: "Token expired or invalid"
-            });
-        }
+        req.user = {
+            id: rows[0].id
+        };
 
         next();
 
     } catch (err) {
-        // console.error("Authorization error:", err);
-        res.status(401).send({
-            code: 401,
-            status: "Unauthorized",
-            message: "Please login first or register if you don't have an account"
+        // console.error("Database query error:", err);
+        return res.status(500).send({
+            code: 500,
+            status: "Authorization - Internal Server Error",
+            message: err.message
         });
     } finally {
         if (client) {
