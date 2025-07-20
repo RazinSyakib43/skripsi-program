@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const dbreplica = require('../config/dbreplica');
+const db = require('../config/dbreplica');
 
 const SECRET_KEY = '77719d1f20ad7752933c6c00c1d18218b3fa3257612378920e93ae1b336ed51e';
 
@@ -24,48 +24,34 @@ async function authorize(req, res, next) {
         // console.log("tokenPayload", tokenPayload);
 
         clientReplica = await dbreplica.connect();
-        try {
-            const tableRole = [tokenPayload.role];
-            // console.log("tableRole", tableRole);
-            const queryText = `SELECT id FROM ${tableRole} WHERE id = $1`;
-            // console.log("queryText", queryText);
-            const { rows } = await clientReplica.query(queryText, [tokenPayload.id]);
-            // console.log("rows", rows);
-            if (rows.length === 0) {
-                return res.status(401).send({
-                    code: 401,
-                    status: "Unauthorized",
-                    message: "User not found"
-                });
-            }
-            req.user = {
-                id: rows[0].id
-            };
-        } catch (err) {
-            // console.error("Database query error:", err);
-            return res.status(500).send({
-                code: 500,
-                status: "Authorization - Internal Server Error",
-                message: err.message
-            });
-        }
 
-        if (!req.user) {
+        const tableRole = [tokenPayload.role];
+        // console.log("tableRole", tableRole);
+        const queryText = `SELECT id FROM ${tableRole} WHERE id = $1`;
+        // console.log("queryText", queryText);
+        const { rows } = await clientReplica.query(queryText, [tokenPayload.id]);
+        // console.log("rows", rows);
+
+        if (rows.length === 0) {
             return res.status(401).send({
                 code: 401,
                 status: "Unauthorized",
-                message: "Token expired or invalid"
+                message: "User not found"
             });
         }
+
+        req.user = {
+            id: rows[0].id
+        };
 
         next();
 
     } catch (err) {
-        // console.error("Authorization error:", err);
-        res.status(401).send({
-            code: 401,
-            status: "Unauthorized",
-            message: "Please login first or register if you don't have an account"
+        // console.error("Database query error:", err);
+        return res.status(500).send({
+            code: 500,
+            status: "Authorization - Internal Server Error",
+            message: err.message
         });
     } finally {
         if (clientReplica) {
