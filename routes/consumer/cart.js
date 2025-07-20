@@ -110,6 +110,7 @@ router.post("/add", async (req, res) => {
 
         if (checkQuery.rows.length > 0) {
             // Update notes dan weight jika item keranjang sudah ada sebelumnya
+
             const queryUpdate = await client.query(`UPDATE cart SET notes = $1, weight = weight + $2 WHERE id_fish = $3 AND id_consumer = $4 RETURNING id`, [notes, weight, id_fish, consumerID]);
             if (queryUpdate.rowCount === 0) {
                 return res.status(404).json({

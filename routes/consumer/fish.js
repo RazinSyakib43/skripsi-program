@@ -4,6 +4,7 @@ const router = express.Router();
 const db = require('../../config/db');
 const redis = require('../../config/redis');
 
+// get all fish (cache-aside)
 router.get("/all", async (req, res) => {
     let client;
     try {
@@ -26,6 +27,7 @@ router.get("/all", async (req, res) => {
                     message: "No fish found",
                 });
             }
+ 
             return res.status(200).json({
                 message: "Success - All fish (PostgreSQL)",
                 data: querySelect.rows,
@@ -212,6 +214,7 @@ router.get("/detail/:id", async (req, res) => {
     }
 });
 
+
 // get detail fish (cache hit)
 router.get("/detail-cachehit/:id", async (req, res) => {
     const fishId = req.params.id;
@@ -235,6 +238,47 @@ router.get("/detail-cachehit/:id", async (req, res) => {
 
         const JSONparse = JSON.parse(fishDetailCache);
         const weightDetailDB = await db.query(`SELECT weight FROM weight WHERE id = $1`, [JSONparse.id_weight]);
+
+        JSONparse.weight = weightDetailDB.rows[0].weight;
+
+        return res.status(200).json({
+            message: `Success - Detail fish 2 (Redis Cache)`,
+            data: JSONparse,
+        });
+    } catch (err) {
+        // console.error("Error fetching fish details:", err);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            error: err.message,
+        });
+    }
+});
+
+// get detail fish (cache hit)
+router.get("/detail-cachehit/:id", async (req, res) => {
+    const fishId = req.params.id;
+
+    if (!fishId) {
+        return res.status(400).json({
+            message: "Detail Fish (cache hit) - Missing fish ID",
+        });
+    }
+
+    try {
+        // cek di redis ada gak
+        let fishDetailCache = await redis.get(`fish:detail:${fishId}`);
+
+        if (!fishDetailCache) {
+            return res.status(404).json({
+                message: "No fish detail cache found",
+            });
+        }
+
+        const JSONparse = JSON.parse(fishDetailCache);
+        const weightDetailDB = await db.query(
+            `SELECT weight FROM weight WHERE id = $1`,
+            [JSONparse.id_weight]
+        );
 
         JSONparse.weight = weightDetailDB.rows[0].weight;
 

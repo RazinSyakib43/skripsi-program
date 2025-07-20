@@ -4,6 +4,7 @@ const router = express.Router();
 const db = require('../../config/db');
 const redis = require('../../config/redis');
 
+// get all orders (cache-aside)
 router.get("/all", async (req, res) => {
     let client;
     const consumerID = req.user.id;
@@ -19,6 +20,7 @@ router.get("/all", async (req, res) => {
             });
         } else {
             client = await db.connect();
+
             const querySelect = await client.query(`SELECT o.id AS id_ordering, o.date, o.status AS delivery_status, JSON_AGG(JSONB_BUILD_OBJECT( 'id_fish', f.id, 'name', f.name, 'price', f.price, 'weight', dor.weight, 'total_price', dor.weight * f.price, 'seller_name', s.name, 'location', s.location)) AS fishes FROM ordering o INNER JOIN detail_ordering dor ON o.id = dor.id_ordering INNER JOIN fish f ON dor.id_fish = f.id INNER JOIN seller s ON f.id_seller = s.id WHERE dor.id_consumer = $1 GROUP BY o.id, o.date, o.status;`, [consumerID]);
 
             if (querySelect.rows.length === 0) {

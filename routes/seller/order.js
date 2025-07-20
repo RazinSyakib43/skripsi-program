@@ -4,6 +4,7 @@ const router = express.Router();
 const db = require('../../config/db');
 const redis = require('../../config/redis');
 
+// get all orders (cache-aside)
 router.get("/all", async (req, res) => {
     let client;
     const sellerID = req.user.id;
