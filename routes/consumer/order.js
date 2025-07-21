@@ -128,7 +128,8 @@ router.post('/create', async (req, res) => {
         }
 
         return res.status(201).json({
-            id_ordering: queryInsert.rows[0].id_ordering,
+            idOrdering: queryInsert.rows[0].id_ordering,
+            consumerID: consumerID,
             message: "Order created successfully",
         });
     } catch (err) {
@@ -202,6 +203,7 @@ router.post('/create/detail', async (req, res) => {
 
         return res.status(201).json({
             id_ordering: orderingID,
+            consumerID: consumerID,
             message: "Order details created successfully",
         });
     } catch (err) {

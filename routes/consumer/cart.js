@@ -128,7 +128,7 @@ router.post("/add", async (req, res) => {
             });
         } else {
             // Insert item baru ke keranjang jika belum ada
-            const queryInsert = await client.query(`INSERT INTO cart (notes, weight, id_fish, id_consumer) VALUES ($1, $2, $3, $4)`, [notes, weight, id_fish, consumerID]);
+            const queryInsert = await client.query(`INSERT INTO cart (notes, weight, id_fish, id_consumer) VALUES ($1, $2, $3, $4) RETURNING id AS id_cart`, [notes, weight, id_fish, consumerID]);
             if (queryInsert.rowCount === 0) {
                 return res.status(400).json({
                     id_fish: id_fish,
@@ -139,6 +139,8 @@ router.post("/add", async (req, res) => {
                 });
             }
             return res.status(201).json({
+                idCart: queryInsert.rows[0].id_cart,
+                consumerID: consumerID,
                 message: "Item added to cart successfully",
             });
         }
