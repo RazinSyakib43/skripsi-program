@@ -1,10 +1,10 @@
 const jwt = require('jsonwebtoken');
-const db = require('../config/db');
+const dbreplica = require('../config/dbreplica');
 
 const SECRET_KEY = '77719d1f20ad7752933c6c00c1d18218b3fa3257612378920e93ae1b336ed51e';
 
 async function authorize(req, res, next) {
-    let client;
+    let clientReplica;
     try {
         let bearerToken = req.headers.authorization;
 
@@ -24,13 +24,13 @@ async function authorize(req, res, next) {
         const tokenPayload = jwt.verify(bearerToken, SECRET_KEY);
         // console.log("tokenPayload", tokenPayload);
 
-        client = await db.connect();
+        clientReplica = await dbreplica.connect();
 
         const tableRole = [tokenPayload.role];
         // console.log("tableRole", tableRole);
         const queryText = `SELECT id FROM ${tableRole} WHERE id = $1`;
         // console.log("queryText", queryText);
-        const { rows } = await client.query(queryText, [tokenPayload.id]);
+        const { rows } = await clientReplica.query(queryText, [tokenPayload.id]);
         // console.log("rows", rows);
 
         if (rows.length === 0) {
@@ -56,8 +56,8 @@ async function authorize(req, res, next) {
             message: err.message
         });
     } finally {
-        if (client) {
-            client.release();
+        if (clientReplica) {
+            clientReplica.release();
         }
     }
 }

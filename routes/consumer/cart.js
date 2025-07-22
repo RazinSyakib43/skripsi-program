@@ -1,17 +1,18 @@
 const express = require("express");
 const router = express.Router();
 
-const db = require('../../config/db');
+const dbutama = require('../../config/dbutama');
+const dbreplica = require('../../config/dbreplica');
 
 router.get("/", async (req, res) => {
-    let client;
+    let clientReplica;
 
     const consumerID = req.user.id;
 
     try {
-        client = await db.connect();
+        clientReplica = await dbreplica.connect();
 
-        const querySelect = await client.query(`SELECT c.id AS id_cart, c.notes, c.weight, f.id AS id_fish, f.name, f.price, s.name AS seller_name,s.location, f.photo_url FROM cart c JOIN fish f ON c.id_fish = f.id JOIN seller s ON f.id_seller = s.id WHERE c.id_consumer = $1`, [consumerID]);
+        const querySelect = await clientReplica.query(`SELECT c.id AS id_cart, c.notes, c.weight, f.id AS id_fish, f.name, f.price, s.name AS seller_name,s.location, f.photo_url FROM cart c JOIN fish f ON c.id_fish = f.id JOIN seller s ON f.id_seller = s.id WHERE c.id_consumer = $1`, [consumerID]);
         if (querySelect.rows.length === 0) {
             return res.status(404).json({
                 consumerID: consumerID,
@@ -29,14 +30,15 @@ router.get("/", async (req, res) => {
             error: err.message,
         });
     } finally {
-        if (client) {
-            client.release();
+        if (clientReplica) {
+            clientReplica.release();
         }
     }
 });
 
 router.post("/add", async (req, res) => {
-    let client;
+    let clientUtama;
+    let clientReplica;
 
     const { id_fish, notes, weight } = req.body;
     const consumerID = req.user.id;
@@ -60,15 +62,17 @@ router.post("/add", async (req, res) => {
     }
 
     try {
-        client = await db.connect();
+        clientReplica = await dbreplica.connect();
 
         // Check jika item sudah ada di keranjangs
         // pakai 1 karena gak butuh datanya, cuma cek datanya ada atau gk
-        const checkQuery = await client.query(`SELECT 1 FROM cart WHERE id_fish = $1 AND id_consumer = $2`, [id_fish, consumerID]);
+        const checkQuery = await clientReplica.query(`SELECT 1 FROM cart WHERE id_fish = $1 AND id_consumer = $2`, [id_fish, consumerID]);
+
+        clientUtama = await dbutama.connect();
 
         if (checkQuery.rows.length > 0) {
             // Update notes dan weight jika item keranjang sudah ada sebelumnya
-            const queryUpdate = await client.query(`UPDATE cart SET notes = $1, weight = weight + $2 WHERE id_fish = $3 AND id_consumer = $4 RETURNING id`, [notes, weight, id_fish, consumerID]);
+            const queryUpdate = await clientUtama.query(`UPDATE cart SET notes = $1, weight = weight + $2 WHERE id_fish = $3 AND id_consumer = $4 RETURNING id`, [notes, weight, id_fish, consumerID]);
             if (queryUpdate.rowCount === 0) {
                 return res.status(404).json({
                     message: "Cart item not found for update",
@@ -80,7 +84,7 @@ router.post("/add", async (req, res) => {
             });
         } else {
             // Insert item baru ke keranjang jika belum ada
-            const queryInsert = await client.query(`INSERT INTO cart (notes, weight, id_fish, id_consumer) VALUES ($1, $2, $3, $4) RETURNING id AS id_cart`, [notes, weight, id_fish, consumerID]);
+            const queryInsert = await clientUtama.query(`INSERT INTO cart (notes, weight, id_fish, id_consumer) VALUES ($1, $2, $3, $4) RETURNING id AS id_cart`, [notes, weight, id_fish, consumerID]);
             if (queryInsert.rowCount === 0) {
                 return res.status(400).json({
                     id_fish: id_fish,
@@ -103,8 +107,11 @@ router.post("/add", async (req, res) => {
             error: err.message,
         });
     } finally {
-        if (client) {
-            client.release();
+        if (clientUtama) {
+            clientUtama.release();
+        }
+        if (clientReplica) {
+            clientReplica.release();
         }
     }
 });
