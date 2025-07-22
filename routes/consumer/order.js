@@ -81,7 +81,7 @@ router.post('/create', async (req, res) => {
         }
 
         return res.status(201).json({
-            idOrdering: queryInsert.rows[0].id_ordering,
+            id_ordering: queryInsert.rows[0].id_ordering,
             consumerID: consumerID,
             message: "Order created successfully",
         });
